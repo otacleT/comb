@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { runCli } from '../../src/cli/app.js';
+import { runCli, localDate } from '../../src/cli/app.js';
 import { VERSION } from '../../src/version.js';
 
 describe('runCli', () => {
@@ -16,5 +16,11 @@ describe('runCli', () => {
     expect(env).toMatchObject({ schema: 'comb.v1', command: 'instructions', ok: false, data: null });
     expect(env.diagnostics[0].code).toBe('USAGE_ERROR');
     expect(env.diagnostics[0].message).toContain('--change');
+  });
+
+  it('uses the local date, not UTC, for today', () => {
+    expect(localDate(new Date(2026, 9, 6, 0, 30))).toBe('2026-10-06');
+    expect(localDate(new Date(2026, 9, 6, 8, 30))).toBe('2026-10-06');
+    expect(localDate(new Date(2026, 9, 6, 23, 59))).toBe('2026-10-06');
   });
 });

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { runCli } from '../../src/cli/app.js';
@@ -98,5 +98,17 @@ describe('comb archive', () => {
     expect(blocked.diagnostics.find((d: { code: string }) => d.code === 'ARCHIVE_BLOCKED').fix).toContain('--allow-base-drift');
     expect((await runCli(['archive', 'relax-payment', '--allow-base-drift'], root, { today })).code).toBe(0);
     expect(read(root, SPEC)).toContain('Pay within 5 days.');
+  });
+
+  it('reports a disk failure before the move as JSON and changes nothing', async () => {
+    const root = readyProject();
+    writeFileSync(join(root, 'comb/changes/archive'), 'a file where the archive folder should be');
+    const r = await runCli(['archive', 'tighten-payment', '--json'], root, { today });
+    expect(r.code).toBe(1);
+    expect(codes(r.stdout)).toEqual(['ARCHIVE_IO_FAILED']);
+    expect(read(root, SPEC)).toBe(ORDER_SPEC);
+    expect(existsSync(join(root, `${SPEC}.comb-tmp`))).toBe(false);
+    expect(existsSync(join(root, 'comb/changes/tighten-payment/questions.md.comb-tmp'))).toBe(false);
+    expect(existsSync(join(root, 'comb/changes/tighten-payment'))).toBe(true);
   });
 });

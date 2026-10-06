@@ -59,4 +59,9 @@ describe('appendDecisions', () => {
     const r = appendDecisions(canonical, local, 'x');
     expect(r.diagnostics.map((d) => [d.code, d.target?.id])).toEqual([['DECISION_ID_CONFLICT', 'D-021']]);
   });
+
+  it('appends in id order even when the change lists them out of order', () => {
+    const outOfOrder = rewriteDecisionRefs('# Decisions\n\n## D-2: b\n\nrule b\n\n## D-1: a\n\nrule a\n', { 'D-1': 'D-022', 'D-2': 'D-023' });
+    expect(decisions(appendDecisions(DECISIONS_MD, outOfOrder, 'c').text!).map((d) => d.id)).toEqual(['D-021', 'D-022', 'D-023']);
+  });
 });

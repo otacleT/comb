@@ -26,6 +26,10 @@ export interface CliResult {
   stderr: string;
 }
 
+/** Today's date in the local time zone (YYYY-MM-DD), the date people expect in folder names and records. */
+export const localDate = (d: Date = new Date()): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 export type Registrar = (program: Command, ctx: CliContext) => void;
 
 const registrars: Registrar[] = [registerInit, registerNewChange, registerValidate, registerStatus, registerInstructions, registerMarkReviewed, registerArchive, registerList, registerShow, registerUpdate];
@@ -36,7 +40,7 @@ export async function runCli(argv: string[], cwd: string, opts: { today?: () => 
   let code: number = EXIT.OK;
   const ctx: CliContext = {
     cwd,
-    today: opts.today ?? (() => new Date().toISOString().slice(0, 10)),
+    today: opts.today ?? (() => localDate()),
     out: (text) => {
       stdout += text.endsWith('\n') ? text : `${text}\n`;
     },

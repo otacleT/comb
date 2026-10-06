@@ -41,7 +41,8 @@ export function validateDelta(
   const out: Diagnostic[] = [];
   const prefix = base?.prefix ?? delta.prefix;
   const changeCount =
-    delta.added.length + delta.modified.length + delta.removed.length + delta.addedSections.length + delta.modifiedSections.length;
+    delta.added.length + delta.modified.length + delta.removed.length + delta.addedSections.length + delta.modifiedSections.length +
+    (delta.purpose !== null ? 1 : 0);
   if (changeCount === 0) out.push(diag('error', 'DELTA_EMPTY', 'delta has no changes', { file }));
   if (!base) {
     if (!delta.prefix) out.push(diag('error', 'SPEC_PARSE', `new capability "${delta.capability}" needs "prefix" in frontmatter`, { file, line: 1 }));

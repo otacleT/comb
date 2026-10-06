@@ -324,7 +324,7 @@ proposal → delta → review → clarify → tasks → apply → archive
 | archive | 下記の archive 条件を満たす | — |
 
 - **delta のハッシュ**：change の `specs/**/spec.md` を、パス順に連結して正規化した内容の sha256。
-- **next**：上の順で最初に done でない成果物。ただし、review が stale なら review を優先する。すべて done でも open な質問が残っていれば clarify（archive の条件を満たさないため）。
+- **next**：上の順で最初に done でない成果物。invalid な delta は stale な review より先に来る（レビューでは delta を直せないため。D-021）。すべて done でも open な質問が残っていれば clarify（archive の条件を満たさないため）。
 - **archive の条件**：
   - `validate` に error がない。
   - review が stale でない。`review.md` がない場合は `--yes` が必要。
@@ -442,6 +442,7 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | `ARCHIVE_BLOCKED` | 1 | archive の条件（5.1）を満たしていない。満たしていない条件ごとに1件出し、fix に解消の方法やフラグを書く |
 | `DECISION_ID_CONFLICT` | 1 | change ローカルの Decision ID と同じ文字列の ID が正本にある、または Supersedes の対象がすでに別の Decision に置き換えられている |
 | `ARCHIVE_TARGET_EXISTS` | 1 | archive の移動先のフォルダがすでにある |
+| `ARCHIVE_IO_FAILED` | 1 | archive 中にファイルの読み書きが失敗した。移動の前なら何も変わらない。移動の後なら、まだ置き換えていないファイルと、残っている一時ファイルを示す |
 | `ID_NOT_FOUND` | 2 | `comb show` に指定した ID の要件、Decision、change が見つからない |
 
 `instructions` の `data` は次の形。

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { loadChange } from '../../../src/core/project/load.js';
 import { changedSince, deltaHash, requirementHashes } from '../../../src/core/workflow/hash.js';
 import { CONFIG_YAML, metaYaml } from '../../helpers/fixtures.js';
@@ -45,5 +45,27 @@ describe('requirementHashes / changedSince', () => {
   it('lists ids whose hash changed, appeared or disappeared', () => {
     expect(changedSince(null, { 'REQ-A-001': 'x' })).toBeNull();
     expect(changedSince({ 'REQ-A-001': 'x', 'REQ-A-002': 'y' }, { 'REQ-A-001': 'x', 'REQ-A-003': 'z' })).toEqual(['REQ-A-002', 'REQ-A-003']);
+  });
+});
+
+describe('deltaHash ordering', () => {
+  it('orders the deltas by code point, independent of the locale', () => {
+    const change = loadChange(
+      makeProject({
+        'comb/config.yaml': CONFIG_YAML,
+        'comb/changes/c/.comb.yaml': metaYaml('c'),
+        'comb/changes/c/specs/b-cap/spec.md': DELTA,
+        'comb/changes/c/specs/a-cap/spec.md': DELTA,
+      }),
+      'c',
+    )!;
+    const spy = vi.spyOn(String.prototype, 'localeCompare').mockImplementation(() => {
+      throw new Error('locale-dependent ordering');
+    });
+    try {
+      expect(deltaHash(change)).toMatch(/^sha256:[0-9a-f]{16}$/);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

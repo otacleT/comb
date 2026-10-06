@@ -103,6 +103,10 @@ describe('validateDelta', () => {
     expect(codes(validateDelta(d, base, 'd.md', new Set()))).toEqual(['DELTA_ID_EXISTS', 'DELTA_TARGET_MISSING']);
   });
 
+  it('accepts a delta that only replaces the Purpose of an existing capability', () => {
+    expect(validateDelta(delta('## Purpose\nOrders and returns.\n'), base, 'd.md', new Set())).toEqual([]);
+  });
+
   it('rejects a delta section named Requirements, which would hide the requirements', () => {
     const d = delta('## ADDED Sections\n\n### Section: Requirements\nx\n');
     expect(codes(validateDelta(d, base, 'd.md', new Set()))).toEqual(['SPEC_PARSE']);

@@ -6,9 +6,11 @@ const short = (text: string): string => createHash('sha256').update(text).digest
 /** Hash of one requirement or section block (trimmed), as stored in review stamps and change bases. */
 export const blockHash = (text: string): string => `sha256:${short(text.trim())}`;
 
+const byFile = (a: { file: string }, b: { file: string }): number => (a.file < b.file ? -1 : a.file > b.file ? 1 : 0);
+
 /** Hash of every delta of the change (texts are LF-normalized at load time). */
 export function deltaHash(change: ChangeSnapshot): string {
-  const parts = [...change.deltas].sort((a, b) => a.file.localeCompare(b.file)).map((d) => `${d.file}\n${d.text}`);
+  const parts = [...change.deltas].sort(byFile).map((d) => `${d.file}\n${d.text}`);
   return `sha256:${short(parts.join('\n\u0000\n'))}`;
 }
 

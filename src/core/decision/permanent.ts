@@ -47,10 +47,10 @@ function insertField(block: string, field: string): string {
 /** Appends the change's (already rewritten) decisions to the log, with `Change:`, and marks what they supersede (DESIGN §5.3 step 5). */
 export function appendDecisions(canonicalText: string | null, localText: string, changeId: string): { text: string | null; diagnostics: Diagnostic[] } {
   const diagnostics: Diagnostic[] = [];
-  const added = decisionBlocks(localText).map((b) => {
-    const block = localText.slice(b.start, b.end).trim();
-    return /^\s*[-*]\s+\*\*Change(?::\*\*|\*\*\s*:)/m.test(block) ? block : insertField(block, `- **Change:** ${changeId}`);
-  });
+  const added = decisionBlocks(localText)
+    .map((b) => ({ n: idNumber(/^(D-\d+):/.exec(b.text)?.[1] ?? ''), block: localText.slice(b.start, b.end).trim() }))
+    .sort((a, b) => a.n - b.n)
+    .map(({ block }) => (/^\s*[-*]\s+\*\*Change(?::\*\*|\*\*\s*:)/m.test(block) ? block : insertField(block, `- **Change:** ${changeId}`)));
   if (added.length === 0) return { text: canonicalText, diagnostics };
   let text = `${(canonicalText ?? '# Decisions\n').replace(/\n*$/, '')}\n\n${added.join('\n\n')}\n`;
   for (const d of parseDecisions(localText, CANONICAL_FILE).decisions) {

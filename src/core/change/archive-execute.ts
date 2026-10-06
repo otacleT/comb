@@ -28,9 +28,19 @@ export function executeArchive(root: string, plan: ArchivePlan): Diagnostic[] {
     renameSync(abs(plan.from), abs(plan.to));
   } catch (e) {
     for (const t of temps) rmSync(t, { force: true });
-    throw e;
+    return [diag('error', 'ARCHIVE_IO_FAILED', `nothing was changed: ${(e as Error).message}`, undefined,
+      'Fix the cause (permissions, disk space, a file in the way), then run comb archive again')];
   }
   const moved = (file: string): string => (file.startsWith(`${plan.from}/`) ? `${plan.to}${file.slice(plan.from.length)}` : file);
-  for (const w of plan.writes) renameSync(`${abs(moved(w.file))}${TMP}`, abs(moved(w.file)));
+  const targets = plan.writes.map((w) => moved(w.file));
+  for (const [i, target] of targets.entries()) {
+    try {
+      renameSync(`${abs(target)}${TMP}`, abs(target));
+    } catch (e) {
+      return [diag('error', 'ARCHIVE_IO_FAILED',
+        `the change was moved to ${plan.to}, but ${target} could not be replaced: ${(e as Error).message}. Not yet replaced: ${targets.slice(i).join(', ')}`,
+        { file: target }, `Rename each remaining "<file>${TMP}" over "<file>", or restore comb/ with git`)];
+    }
+  }
   return [];
 }
