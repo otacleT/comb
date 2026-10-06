@@ -441,6 +441,7 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | `ARCHIVE_BLOCKED` | 1 | archive の条件（5.1）を満たしていない。満たしていない条件ごとに1件出し、fix に解消の方法やフラグを書く |
 | `DECISION_ID_CONFLICT` | 1 | change ローカルの Decision ID と同じ文字列の ID が正本にある、または Supersedes の対象がすでに別の Decision に置き換えられている |
 | `ARCHIVE_TARGET_EXISTS` | 1 | archive の移動先のフォルダがすでにある |
+| `ID_NOT_FOUND` | 2 | `comb show` に指定した ID の要件、Decision、change が見つからない |
 
 `instructions` の `data` は次の形。
 

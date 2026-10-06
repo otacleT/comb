@@ -133,3 +133,5 @@ export const loadAllChanges = (root: string): ChangeSnapshot[] =>
   listChangeIds(root)
     .map((id) => loadChange(root, id))
     .filter((c): c is ChangeSnapshot => c !== null);
+
+export const listArchivedIds = (root: string): string[] => subdirs(paths.archiveDir(root));
