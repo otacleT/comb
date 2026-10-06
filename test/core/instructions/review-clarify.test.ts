@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { buildInstructions, openQuestions } from '../../../src/core/instructions/build.js';
 import { loadAllChanges, loadProject } from '../../../src/core/project/load.js';
 import { TEMPLATES_DIR } from '../../../src/templates-dir.js';
@@ -85,5 +87,21 @@ describe('clarify instructions', () => {
     ]);
     expect(ins.template).toContain('## D-1:');
     expect(ins.lenses).toEqual([]);
+  });
+});
+
+describe('review lenses', () => {
+  const lens = (id: string) => readFileSync(join(TEMPLATES_DIR, 'lenses', `${id}.md`), 'utf8');
+
+  it('has the formalization memo cover timers and money, not only states and events', () => {
+    const f = lens('formalization');
+    expect(f).toContain('Timer table');
+    expect(f).toContain('Money table');
+    expect(f).toContain('quote');
+    expect(readFileSync(join(TEMPLATES_DIR, 'formats', 'review.md'), 'utf8')).toMatch(/timer table.*money table/i);
+  });
+
+  it('keeps the edge-case lens from dismissing sequences because steps are serialized', () => {
+    expect(lens('edge-cases')).toContain('Serialization');
   });
 });

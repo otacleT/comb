@@ -17,7 +17,7 @@ lenses: [consistency, formalization, edge-cases, change-impact]
 - …
 
 ## Behavior model
-<from the formalization lens: glossary, state × event table, coverage map, assumption ledger — or "Not applicable: <reason>">
+<from the formalization lens: glossary, state × event table, timer table, money table, coverage map, assumption ledger — or "Not applicable: <reason>">
 
 ## Checked and consistent
 - <what you checked and found consistent, so the next review does not redo it>
