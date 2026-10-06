@@ -1,0 +1,39 @@
+import { describe, expect, it } from 'vitest';
+import { loadChange } from '../../../src/core/project/load.js';
+import { changedSince, deltaHash, requirementHashes } from '../../../src/core/workflow/hash.js';
+import { CONFIG_YAML, metaYaml } from '../../helpers/fixtures.js';
+import { makeProject } from '../../helpers/project.js';
+
+const DELTA = `## ADDED Requirements\n\n### Requirement: REQ-ORDER-003 New\nx\n\n#### Scenario: s\n- **GIVEN** a\n\n## REMOVED Requirements\n\n### Requirement: REQ-ORDER-001\n**Reason:** r\n`;
+const changeWith = (delta: string) =>
+  loadChange(
+    makeProject({
+      'comb/config.yaml': CONFIG_YAML,
+      'comb/changes/c/.comb.yaml': metaYaml('c'),
+      'comb/changes/c/specs/order-lifecycle/spec.md': delta,
+    }),
+    'c',
+  )!;
+
+describe('deltaHash', () => {
+  it('is stable across line endings and changes with the text', () => {
+    const h = deltaHash(changeWith(DELTA));
+    expect(h).toMatch(/^sha256:[0-9a-f]{16}$/);
+    expect(deltaHash(changeWith(DELTA.replace(/\n/g, '\r\n')))).toBe(h);
+    expect(deltaHash(changeWith(DELTA.replace('x\n', 'y\n')))).not.toBe(h);
+  });
+});
+
+describe('requirementHashes / changedSince', () => {
+  it('hashes added/modified blocks and marks removals', () => {
+    const hashes = requirementHashes(changeWith(DELTA));
+    expect(Object.keys(hashes).sort()).toEqual(['REQ-ORDER-001', 'REQ-ORDER-003']);
+    expect(hashes['REQ-ORDER-001']).toBe('removed');
+    expect(hashes['REQ-ORDER-003']).toMatch(/^sha256:/);
+  });
+
+  it('lists ids whose hash changed, appeared or disappeared', () => {
+    expect(changedSince(null, { 'REQ-A-001': 'x' })).toBeNull();
+    expect(changedSince({ 'REQ-A-001': 'x', 'REQ-A-002': 'y' }, { 'REQ-A-001': 'x', 'REQ-A-003': 'z' })).toEqual(['REQ-A-002', 'REQ-A-003']);
+  });
+});

@@ -170,6 +170,7 @@ prefix: ORDER          # 新しい capability を作るときだけ必須
 ```markdown
 ---
 reviewed: sha256:…        # comb mark-reviewed が書く（delta の内容ハッシュ）
+requirements: { REQ-ORDER-019: "sha256:…" }   # comb mark-reviewed が書く（要件ごとのハッシュ。再レビューで変更箇所を特定する）
 lenses: [consistency, formalization, edge-cases, change-impact]
 ---
 # Review: add-auto-cancel-unshipped
@@ -398,7 +399,7 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | `comb status [--change <id>] [--json]` | 成果物の状態、ゲート、next、未決質問の件数、ベースのずれ | M7 |
 | `comb instructions <artifact> --change <id> [--json]` | テンプレート、ルール、文脈、関連する正本の抜粋、次に使える ID、書き出し先のパス | M7 |
 | `comb validate [--change <id>] [--json]` | 3〜4 章の規則で検査する | M8 |
-| `comb mark-reviewed --change <id>` | `review.md` の `reviewed` に、現在の delta のハッシュを書く | M5 |
+| `comb mark-reviewed --change <id>` | `review.md` の frontmatter に、delta のハッシュと要件ごとのハッシュを書く | M5 |
 | `comb archive <id> [--yes] [--allow-dropped-scenarios] [--allow-base-drift]` | 5.3 の手順 | M9 |
 | `comb list [--json]` / `comb show <REQ-…\|D-…\|change-id> [--json]` | 一覧と取り出し | M12 |
 | `comb update` | Skill の再生成 | S3 |
@@ -430,6 +431,7 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | コード | 終了コード | 内容 |
 |---|---|---|
 | `NOT_A_COMB_PROJECT` | 2 | カレントディレクトリとその親に `comb/config.yaml` がない |
+| `REVIEW_MISSING` | 1 | `mark-reviewed` の対象の review.md がない |
 | `USAGE_ERROR` | 2 | 引数やオプションが不正（`--json` を指定していれば、この場合も封筒を返す） |
 | `CHANGE_NOT_FOUND` / `UNKNOWN_ARTIFACT` / `UNKNOWN_AGENT` | 2 | 指定した change、成果物、エージェントが存在しない |
 | `CHANGE_ID_INVALID` / `CHANGE_EXISTS` | 1 | change ID が kebab-case でない、またはすでに存在する |
