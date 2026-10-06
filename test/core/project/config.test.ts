@@ -21,6 +21,11 @@ describe('config', () => {
     expect(diagnostics.map((d) => d.code)).toEqual(Array(6).fill('CONFIG_INVALID'));
   });
 
+  it('reports a review key that is empty or not a mapping instead of crashing', () => {
+    expect(parseConfig('version: 1\nreview:\n', 'c').diagnostics.map((d) => d.code)).toEqual(['CONFIG_INVALID']);
+    expect(parseConfig('version: 1\nreview: 3\n', 'c').diagnostics.map((d) => d.code)).toEqual(['CONFIG_INVALID']);
+  });
+
   it('reports broken YAML', () => {
     expect(parseConfig('version: [', 'c').diagnostics[0]!.code).toBe('CONFIG_INVALID');
   });

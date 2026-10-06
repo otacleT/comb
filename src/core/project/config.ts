@@ -58,7 +58,9 @@ export function parseConfig(text: string, file: string): { config: CombConfig; d
     else if (Buffer.byteLength(r.context, 'utf8') > MAX_CONTEXT_BYTES) bad('"context" exceeds 16KB');
     else config.context = r.context;
   }
-  if (r.review !== undefined) {
+  if (r.review !== undefined && (r.review === null || typeof r.review !== 'object' || Array.isArray(r.review))) {
+    bad('"review" must be a mapping with "lenses" and/or "batch"');
+  } else if (r.review !== undefined) {
     const rv = r.review as Record<string, unknown>;
     if (rv.lenses !== undefined) {
       if (isStringArray(rv.lenses) && rv.lenses.every((l) => DEFAULT_LENSES.includes(l))) config.review.lenses = rv.lenses;
