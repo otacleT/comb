@@ -27,6 +27,7 @@ export interface ChangeStatus {
   next: ArtifactId | 'archive';
   tasks: { done: number; total: number };
   questions: QuestionCounts;
+  baseDrift: string[];
 }
 
 export const ARTIFACT_ORDER: readonly ArtifactId[] = ['proposal', 'delta', 'review', 'clarify', 'tasks', 'apply'];
@@ -97,5 +98,6 @@ export function computeStatus(change: ChangeSnapshot, validation: Diagnostic[]):
         : { id: 'apply', state: 'in-progress', detail: `${tasks.done}/${tasks.total}` };
   const artifacts = [proposal, delta, review, clarify, taskFile, apply];
   const next = artifacts.find((a) => a.state !== 'done')?.id ?? 'archive';
-  return { change: change.id, artifacts, next, tasks, questions: counts };
+  const baseDrift = validation.filter((d) => d.code === 'BASE_DRIFT').map((d) => d.target?.id ?? '');
+  return { change: change.id, artifacts, next, tasks, questions: counts, baseDrift };
 }

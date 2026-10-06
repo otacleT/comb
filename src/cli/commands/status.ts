@@ -6,10 +6,11 @@ import type { CliContext } from '../app.js';
 import { envelope } from '../output.js';
 import { finish, requireRoot, usageError } from './shared.js';
 
-const detailOf = (s: ChangeStatus): string =>
+export const describeStatus = (s: ChangeStatus): string =>
   [
     ...s.artifacts.map((a) => `${a.id.padEnd(9)}${a.state}${a.detail ? ` (${a.detail})` : ''}`),
     `questions: ${s.questions.open} open (${s.questions.openHigh} high), ${s.questions.answered} answered, ${s.questions.deferred} deferred`,
+    ...(s.baseDrift.length > 0 ? [`base drift: ${s.baseDrift.join(', ')} (the spec changed after the proposal)`] : []),
     `next: ${s.next}`,
   ].join('\n');
 
@@ -35,7 +36,7 @@ export function registerStatus(program: Command, ctx: CliContext): void {
           usageError(ctx, 'status', json, 'CHANGE_NOT_FOUND', `change "${opts.change}" not found`);
           return;
         }
-        finish(ctx, envelope('status', s, []), json, detailOf);
+        finish(ctx, envelope('status', s, []), json, describeStatus);
         return;
       }
       const list = all.map((c) => statusOf(c.id) as ChangeStatus);

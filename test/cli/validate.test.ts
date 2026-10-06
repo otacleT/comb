@@ -1,8 +1,9 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { parse as parseYaml } from 'yaml';
 import { runCli } from '../../src/cli/app.js';
-import { CONFIG_YAML, DECISIONS_MD, metaYaml, ORDER_SPEC } from '../helpers/fixtures.js';
+import { CONFIG_YAML, DECISIONS_MD, metaYaml, MODIFY_PAYMENT_DELTA, ORDER_SPEC } from '../helpers/fixtures.js';
 import { makeProject } from '../helpers/project.js';
 
 const today = () => '2026-10-06';
@@ -58,5 +59,30 @@ describe('comb validate / new change', () => {
   it('exits 2 for an unknown command', async () => {
     const r = await runCli(['nope'], process.cwd());
     expect(r.code).toBe(2);
+  });
+});
+
+describe('comb validate --change records the base (S1)', () => {
+  it('records MODIFIED targets once and warns with BASE_DRIFT after the spec changes', async () => {
+    const root = makeProject({
+      'comb/config.yaml': CONFIG_YAML,
+      'comb/specs/order-lifecycle/spec.md': ORDER_SPEC,
+      'comb/decisions.md': DECISIONS_MD,
+      'comb/changes/c/.comb.yaml': metaYaml('c'),
+      'comb/changes/c/specs/order-lifecycle/spec.md': MODIFY_PAYMENT_DELTA,
+    });
+    const metaOf = () => parseYaml(readFileSync(join(root, 'comb/changes/c/.comb.yaml'), 'utf8')) as { base: Record<string, string> };
+    const first = JSON.parse((await runCli(['validate', '--change', 'c', '--json'], root, { today })).stdout);
+    expect(first.data.baseRecorded).toEqual(['REQ-ORDER-002']);
+    const recorded = metaOf().base['REQ-ORDER-002'];
+    expect(recorded).toMatch(/^sha256:[0-9a-f]{16}$/);
+
+    writeFileSync(join(root, 'comb/specs/order-lifecycle/spec.md'), ORDER_SPEC.replace('Pay within 3 days.', 'Pay within 4 days.'));
+    const second = await runCli(['validate', '--change', 'c', '--json'], root, { today });
+    const env = JSON.parse(second.stdout);
+    expect(second.code).toBe(0);
+    expect(env.data.baseRecorded).toEqual([]);
+    expect(env.diagnostics.map((d: { code: string }) => d.code)).toEqual(['BASE_DRIFT']);
+    expect(metaOf().base['REQ-ORDER-002']).toBe(recorded);
   });
 });

@@ -91,3 +91,14 @@ After the deadline, "mark shipped" is rejected with SHIP_WINDOW_CLOSED.
 
 **Why:** a cancelled order must never ship.
 `;
+
+export const MODIFY_PAYMENT_DELTA = `## MODIFIED Requirements
+
+### Requirement: REQ-ORDER-002 Payment
+Pay within 2 days.
+
+#### Scenario: Paid in time
+- **GIVEN** an unpaid order
+- **WHEN** payment arrives
+- **THEN** the order is paid
+`;

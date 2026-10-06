@@ -1,4 +1,5 @@
 import type { Command } from 'commander';
+import { recordBase } from '../../core/change/base.js';
 import { validateChange, validateProject } from '../../core/change/validate-change.js';
 import { loadAllChanges, loadProject } from '../../core/project/load.js';
 import type { CliContext } from '../app.js';
@@ -28,7 +29,8 @@ export function registerValidate(program: Command, ctx: CliContext): void {
       }
       const diagnostics = validateProject(project);
       for (const c of targets) diagnostics.push(...validateChange(project, c, all));
-      const data = { specs: project.specs.size, changes: targets.map((c) => c.id) };
+      const baseRecorded = opts.change !== undefined && targets[0] ? recordBase(project, targets[0]) : [];
+      const data = { specs: project.specs.size, changes: targets.map((c) => c.id), baseRecorded };
       finish(ctx, envelope('validate', data, diagnostics), json, (d) => `checked ${d.specs} spec(s), ${d.changes.length} change(s)`);
     });
 }

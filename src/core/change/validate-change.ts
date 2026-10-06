@@ -4,6 +4,7 @@ import { parseDecisions, parseQuestions } from '../decision/parse.js';
 import { checkDecisionRefs, validateDecisions, validateQuestions } from '../decision/validate.js';
 import { paths, rel } from '../project/paths.js';
 import { validateCapability, validateDelta } from '../spec/validate-spec.js';
+import { baseDrift } from './base.js';
 
 const CANONICAL_DECISIONS_FILE = 'comb/decisions.md';
 
@@ -105,5 +106,6 @@ export function validateChange(project: Project, change: ChangeSnapshot, all: Ch
       out.push(...checkDecisionRefs(r.decisionRefs, knownDecisions, { file: d.file, line: r.line, id: r.id }));
     }
   }
+  out.push(...baseDrift(project, change));
   return out;
 }

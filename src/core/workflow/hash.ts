@@ -3,6 +3,9 @@ import type { ChangeSnapshot } from '../project/load.js';
 
 const short = (text: string): string => createHash('sha256').update(text).digest('hex').slice(0, 16);
 
+/** Hash of one requirement or section block (trimmed), as stored in review stamps and change bases. */
+export const blockHash = (text: string): string => `sha256:${short(text.trim())}`;
+
 /** Hash of every delta of the change (texts are LF-normalized at load time). */
 export function deltaHash(change: ChangeSnapshot): string {
   const parts = [...change.deltas].sort((a, b) => a.file.localeCompare(b.file)).map((d) => `${d.file}\n${d.text}`);
@@ -16,10 +19,10 @@ export function deltaHash(change: ChangeSnapshot): string {
 export function requirementHashes(change: ChangeSnapshot): Record<string, string> {
   const out: Record<string, string> = {};
   for (const d of change.deltas) {
-    for (const r of [...d.delta.added, ...d.delta.modified]) out[r.id] = `sha256:${short(r.block.trim())}`;
+    for (const r of [...d.delta.added, ...d.delta.modified]) out[r.id] = blockHash(r.block);
     for (const x of d.delta.removed) out[x.id] = 'removed';
     for (const s of [...d.delta.addedSections, ...d.delta.modifiedSections]) {
-      out[`${d.delta.capability}#${s.heading}`] = `sha256:${short(s.content.trim())}`;
+      out[`${d.delta.capability}#${s.heading}`] = blockHash(s.content);
     }
     if (d.delta.purpose !== null || d.delta.prefix !== null) {
       out[`${d.delta.capability}#Purpose`] = `sha256:${short(`${d.delta.prefix ?? ''}\n${d.delta.purpose ?? ''}`)}`;

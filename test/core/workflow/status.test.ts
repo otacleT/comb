@@ -82,3 +82,9 @@ it('marks clarify invalid for format errors in questions.md', () => {
   expect(s.artifacts[1]!.state).toBe('done');
 });
 });
+
+it('lists requirements with base drift', () => {
+  const s = computeStatus(snapshot({}), [diag('warning', 'BASE_DRIFT', 'moved', { id: 'REQ-ORDER-002' })]);
+  expect(s.baseDrift).toEqual(['REQ-ORDER-002']);
+  expect(computeStatus(snapshot({}), []).baseDrift).toEqual([]);
+});
