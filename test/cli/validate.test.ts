@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { runCli } from '../../src/cli/app.js';
-import { CONFIG_YAML, metaYaml, ORDER_SPEC } from '../helpers/fixtures.js';
+import { CONFIG_YAML, DECISIONS_MD, metaYaml, ORDER_SPEC } from '../helpers/fixtures.js';
 import { makeProject } from '../helpers/project.js';
 
 const today = () => '2026-10-06';
@@ -17,7 +17,11 @@ describe('comb validate / new change', () => {
   });
 
   it('passes on a valid project', async () => {
-    const root = makeProject({ 'comb/config.yaml': CONFIG_YAML, 'comb/specs/order-lifecycle/spec.md': ORDER_SPEC });
+    const root = makeProject({
+      'comb/config.yaml': CONFIG_YAML,
+      'comb/specs/order-lifecycle/spec.md': ORDER_SPEC,
+      'comb/decisions.md': DECISIONS_MD,
+    });
     const r = await runCli(['validate'], root);
     expect(r.code).toBe(0);
     expect(r.stdout.trim()).toBe('checked 1 spec(s), 0 change(s)');
@@ -27,6 +31,7 @@ describe('comb validate / new change', () => {
     const root = makeProject({
       'comb/config.yaml': CONFIG_YAML,
       'comb/specs/order-lifecycle/spec.md': ORDER_SPEC,
+      'comb/decisions.md': DECISIONS_MD,
       'comb/changes/a/.comb.yaml': metaYaml('a'),
       'comb/changes/a/specs/order-lifecycle/spec.md': '## REMOVED Requirements\n\n### Requirement: REQ-ORDER-077\n**Reason:** r\n',
     });

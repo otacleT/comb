@@ -299,6 +299,7 @@ type Decision    = { id: string; title: string; date: string; refs: string[]; fr
 | `SCENARIO_DROPPED` | warning | MODIFIED で、既存のシナリオ名が消えている |
 | `REF_UNKNOWN_REQ` | error | Question / Decision の Refs に存在しない要件がある |
 | `REF_UNKNOWN_DECISION` | error | 本文や Supersedes に存在しない Decision がある |
+| `REF_UNKNOWN_QUESTION` | error | Decision の From に存在しない質問がある |
 | `QUESTION_UNRESOLVED_LINK` | error | answered なのに `Decision:` がない（`D-n` か `none: <理由>` が必要） |
 | `BASE_DRIFT` | warning | 提案時から正本の対象要件が変わっている（S1） |
 

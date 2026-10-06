@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { createChange } from '../../../src/core/change/new-change.js';
 import { validateChange, validateProject } from '../../../src/core/change/validate-change.js';
 import { loadAllChanges, loadChange, loadProject } from '../../../src/core/project/load.js';
-import { CONFIG_YAML, metaYaml, ORDER_SPEC } from '../../helpers/fixtures.js';
+import { CONFIG_YAML, DECISIONS_MD, metaYaml, ORDER_SPEC } from '../../helpers/fixtures.js';
 import { makeProject } from '../../helpers/project.js';
 
 const scenario = '\n#### Scenario: s\n- **GIVEN** a\n';
@@ -42,6 +42,7 @@ describe('validation across a project', () => {
       'comb/config.yaml': CONFIG_YAML,
       'comb/specs/order-lifecycle/spec.md': ORDER_SPEC,
       'comb/specs/other/spec.md': ORDER_SPEC,
+      'comb/decisions.md': DECISIONS_MD,
     });
     // `other` repeats both requirements of order-lifecycle (each id reported once on the second spec)
     // and shares its prefix (reported once).
@@ -65,6 +66,7 @@ describe('validation across a project', () => {
       'comb/config.yaml': CONFIG_YAML,
       'comb/specs/order-lifecycle/spec.md': ORDER_SPEC,
       'comb/specs/order-refunds/spec.md': refunds,
+      'comb/decisions.md': DECISIONS_MD,
     });
     expect(validateProject(loadProject(root)).map((d) => d.code)).toEqual(['REQ_ID_PREFIX']);
   });

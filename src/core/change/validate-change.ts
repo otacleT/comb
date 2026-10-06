@@ -1,6 +1,16 @@
 import { diag, type Diagnostic } from '../diagnostics.js';
 import type { ChangeSnapshot, Project } from '../project/load.js';
+import { parseDecisions, parseQuestions } from '../decision/parse.js';
+import { checkDecisionRefs, validateDecisions, validateQuestions } from '../decision/validate.js';
+import { paths, rel } from '../project/paths.js';
 import { validateCapability, validateDelta } from '../spec/validate-spec.js';
+
+const CANONICAL_DECISIONS_FILE = 'comb/decisions.md';
+
+const canonicalDecisionIds = (project: Project): { ids: Set<string>; diagnostics: Diagnostic[] } => {
+  const parsed = parseDecisions(project.decisionsText ?? '', CANONICAL_DECISIONS_FILE);
+  return { ids: new Set(parsed.decisions.map((d) => d.id)), diagnostics: parsed.diagnostics };
+};
 
 export function validateProject(project: Project): Diagnostic[] {
   const out: Diagnostic[] = [...project.diagnostics];
@@ -24,6 +34,13 @@ export function validateProject(project: Project): Diagnostic[] {
       out.push(diag('error', 'REQ_ID_PREFIX', `prefix ${prefix} is already used by ${prev}`, { file: spec.file, line: 1 }, 'Give each capability its own prefix'));
     } else {
       prefixOwner.set(prefix, spec.name);
+    }
+  }
+  const canonical = canonicalDecisionIds(project);
+  out.push(...canonical.diagnostics);
+  for (const spec of project.specs.values()) {
+    for (const r of spec.capability.requirements) {
+      out.push(...checkDecisionRefs(r.decisionRefs, canonical.ids, { file: spec.file, line: r.line, id: r.id }));
     }
   }
   return out;
@@ -67,6 +84,25 @@ export function validateChange(project: Project, change: ChangeSnapshot, all: Ch
       if (owner !== undefined && owner !== d.capability) out.push(diag('error', 'REQ_ID_DUPLICATE', `${r.id} is already defined in ${owner}`, t));
       const retiredBy = retiredOwner.get(r.id);
       if (retiredBy !== undefined && retiredBy !== d.capability) out.push(diag('error', 'REQ_ID_RETIRED', `${r.id} was retired in ${retiredBy}`, t));
+    }
+  }
+  const canonical = canonicalDecisionIds(project);
+  const questionsFile = rel(project.root, paths.changeFile(project.root, change.id, 'questions'));
+  const decisionsFile = rel(project.root, paths.changeFile(project.root, change.id, 'decisions'));
+  const questions = parseQuestions(change.files.questions ?? '', questionsFile);
+  const decisions = parseDecisions(change.files.decisions ?? '', decisionsFile);
+  out.push(...questions.diagnostics, ...decisions.diagnostics);
+  const ctx = {
+    requirements: new Set([...idOwner.keys(), ...change.deltas.flatMap((d) => d.delta.added.map((r) => r.id))]),
+    canonicalDecisions: canonical.ids,
+    localDecisions: new Set(decisions.decisions.map((d) => d.id)),
+    questions: new Set(questions.questions.map((q) => q.id)),
+  };
+  out.push(...validateQuestions(questions.questions, questionsFile, ctx), ...validateDecisions(decisions.decisions, decisionsFile, ctx));
+  const knownDecisions = new Set([...ctx.canonicalDecisions, ...ctx.localDecisions]);
+  for (const d of change.deltas) {
+    for (const r of [...d.delta.added, ...d.delta.modified]) {
+      out.push(...checkDecisionRefs(r.decisionRefs, knownDecisions, { file: d.file, line: r.line, id: r.id }));
     }
   }
   return out;
