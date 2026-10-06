@@ -9,6 +9,7 @@ import { finish, requireRoot, usageError } from './shared.js';
 const detailOf = (s: ChangeStatus): string =>
   [
     ...s.artifacts.map((a) => `${a.id.padEnd(9)}${a.state}${a.detail ? ` (${a.detail})` : ''}`),
+    `questions: ${s.questions.open} open (${s.questions.openHigh} high), ${s.questions.answered} answered, ${s.questions.deferred} deferred`,
     `next: ${s.next}`,
   ].join('\n');
 

@@ -1,9 +1,12 @@
-import { hasErrors, type Diagnostic } from '../diagnostics.js';
+import type { Diagnostic } from '../diagnostics.js';
+import { parseQuestions } from '../decision/parse.js';
 import { headingBlocks } from '../markdown/blocks.js';
 import type { ChangeSnapshot } from '../project/load.js';
+import { deltaHash } from './hash.js';
+import { readReviewStamp } from './review-stamp.js';
 
 export type ArtifactId = 'proposal' | 'delta' | 'review' | 'clarify' | 'tasks' | 'apply';
-export type ArtifactState = 'done' | 'missing' | 'invalid' | 'in-progress';
+export type ArtifactState = 'done' | 'missing' | 'invalid' | 'in-progress' | 'stale' | 'blocked';
 
 export interface ArtifactStatus {
   id: ArtifactId;
@@ -11,11 +14,19 @@ export interface ArtifactStatus {
   detail?: string;
 }
 
+export interface QuestionCounts {
+  open: number;
+  openHigh: number;
+  answered: number;
+  deferred: number;
+}
+
 export interface ChangeStatus {
   change: string;
   artifacts: ArtifactStatus[];
   next: ArtifactId | 'archive';
   tasks: { done: number; total: number };
+  questions: QuestionCounts;
 }
 
 export const ARTIFACT_ORDER: readonly ArtifactId[] = ['proposal', 'delta', 'review', 'clarify', 'tasks', 'apply'];
@@ -30,9 +41,17 @@ export function proposalComplete(text: string): boolean {
   return ['Why', 'What Changes', 'Impact'].every((h) => h2.has(h));
 }
 
+const errorsIn = (validation: Diagnostic[], belongs: (file: string) => boolean): number =>
+  validation.filter((d) => d.severity === 'error' && d.target?.file !== undefined && belongs(d.target.file)).length;
+
 export function computeStatus(change: ChangeSnapshot, validation: Diagnostic[]): ChangeStatus {
   const tasks = countTasks(change.files.tasks);
-  const errors = validation.filter((d) => d.severity === 'error').length;
+  const deltaFiles = new Set(change.deltas.map((d) => d.file));
+  const deltaErrors = errorsIn(validation, (f) => deltaFiles.has(f));
+  const qdErrors = errorsIn(
+    validation,
+    (f) => f.endsWith(`changes/${change.id}/questions.md`) || f.endsWith(`changes/${change.id}/decisions.md`),
+  );
   const proposal: ArtifactStatus =
     change.files.proposal === undefined
       ? { id: 'proposal', state: 'missing' }
@@ -42,11 +61,33 @@ export function computeStatus(change: ChangeSnapshot, validation: Diagnostic[]):
   const delta: ArtifactStatus =
     change.deltas.length === 0
       ? { id: 'delta', state: 'missing' }
-      : hasErrors(validation)
-        ? { id: 'delta', state: 'invalid', detail: `${errors} error(s)` }
+      : deltaErrors > 0
+        ? { id: 'delta', state: 'invalid', detail: `${deltaErrors} error(s)` }
         : { id: 'delta', state: 'done' };
-  const review: ArtifactStatus = { id: 'review', state: change.files.review === undefined ? 'missing' : 'done' };
-  const clarify: ArtifactStatus = { id: 'clarify', state: 'done', detail: 'questions arrive in M2' };
+  const stamp = readReviewStamp(change.files.review);
+  const review: ArtifactStatus =
+    change.files.review === undefined
+      ? { id: 'review', state: 'missing' }
+      : stamp.reviewed === null
+        ? { id: 'review', state: 'stale', detail: 'not marked reviewed (run comb mark-reviewed)' }
+        : stamp.reviewed !== deltaHash(change)
+          ? { id: 'review', state: 'stale', detail: 'the delta changed since the review' }
+          : { id: 'review', state: 'done' };
+  const questions = parseQuestions(change.files.questions ?? '', 'questions.md').questions;
+  const counts: QuestionCounts = {
+    open: questions.filter((q) => q.status === 'open').length,
+    openHigh: questions.filter((q) => q.status === 'open' && q.severity === 'high').length,
+    answered: questions.filter((q) => q.status === 'answered').length,
+    deferred: questions.filter((q) => q.status === 'deferred').length,
+  };
+  const clarify: ArtifactStatus =
+    qdErrors > 0
+      ? { id: 'clarify', state: 'invalid', detail: `${qdErrors} error(s)` }
+      : counts.openHigh > 0
+        ? { id: 'clarify', state: 'blocked', detail: `${counts.openHigh} high question(s) open` }
+        : counts.open > 0
+          ? { id: 'clarify', state: 'done', detail: `${counts.open} open (medium/low)` }
+          : { id: 'clarify', state: 'done' };
   const taskFile: ArtifactStatus = { id: 'tasks', state: change.files.tasks === undefined ? 'missing' : 'done' };
   const apply: ArtifactStatus =
     tasks.total === 0
@@ -56,5 +97,5 @@ export function computeStatus(change: ChangeSnapshot, validation: Diagnostic[]):
         : { id: 'apply', state: 'in-progress', detail: `${tasks.done}/${tasks.total}` };
   const artifacts = [proposal, delta, review, clarify, taskFile, apply];
   const next = artifacts.find((a) => a.state !== 'done')?.id ?? 'archive';
-  return { change: change.id, artifacts, next, tasks };
+  return { change: change.id, artifacts, next, tasks, questions: counts };
 }

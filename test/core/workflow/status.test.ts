@@ -3,6 +3,8 @@ import { diag } from '../../../src/core/diagnostics.js';
 import type { ChangeSnapshot } from '../../../src/core/project/load.js';
 import { parseDelta } from '../../../src/core/spec/parse-delta.js';
 import { computeStatus, countTasks, proposalComplete } from '../../../src/core/workflow/status.js';
+import { deltaHash } from '../../../src/core/workflow/hash.js';
+import { stampReview } from '../../../src/core/workflow/review-stamp.js';
 
 const PROPOSAL = '# Change: x\n\n## Why\nw\n\n## What Changes\n- a\n\n## Impact\n- b\n';
 
@@ -36,17 +38,47 @@ describe('computeStatus', () => {
   });
 
   it('marks the delta invalid when validation has errors', () => {
-    const s = computeStatus(snapshot({ proposal: PROPOSAL }, true), [diag('error', 'DELTA_EMPTY', 'x')]);
+const s = computeStatus(snapshot({ proposal: PROPOSAL }, true), [diag('error', 'DELTA_EMPTY', 'x', { file: 'comb/changes/x/specs/c/spec.md' })]);
     expect(s.artifacts[1]).toEqual({ id: 'delta', state: 'invalid', detail: '1 error(s)' });
     expect(s.next).toBe('delta');
   });
 
-  it('goes to review after a valid delta, then tasks/apply, then archive', () => {
-    expect(computeStatus(snapshot({ proposal: PROPOSAL, tasks: '- [ ] a' }, true), []).next).toBe('review');
-    const s = computeStatus(snapshot({ proposal: PROPOSAL, review: 'r', tasks: '- [x] a\n- [ ] b' }, true), []);
-    expect(s.next).toBe('apply');
-    expect(s.tasks).toEqual({ done: 1, total: 2 });
-    expect(s.artifacts[5]).toEqual({ id: 'apply', state: 'in-progress', detail: '1/2' });
-    expect(computeStatus(snapshot({ proposal: PROPOSAL, review: 'r', tasks: '- [x] a' }, true), []).next).toBe('archive');
-  });
+it('goes to review after a valid delta, then tasks/apply, then archive', () => {
+  const reviewed = stampReview('r', deltaHash(snapshot({}, true)), {})!;
+  expect(computeStatus(snapshot({ proposal: PROPOSAL, tasks: '- [ ] a' }, true), []).next).toBe('review');
+  const s = computeStatus(snapshot({ proposal: PROPOSAL, review: reviewed, tasks: '- [x] a\n- [ ] b' }, true), []);
+  expect(s.next).toBe('apply');
+  expect(s.tasks).toEqual({ done: 1, total: 2 });
+  expect(s.artifacts[5]).toEqual({ id: 'apply', state: 'in-progress', detail: '1/2' });
+  expect(computeStatus(snapshot({ proposal: PROPOSAL, review: reviewed, tasks: '- [x] a' }, true), []).next).toBe('archive');
+});
+
+it('marks the review stale when it was never stamped or the delta changed since', () => {
+  const unstamped = computeStatus(snapshot({ proposal: PROPOSAL, review: 'r' }, true), []);
+  expect(unstamped.artifacts[2]).toEqual({ id: 'review', state: 'stale', detail: 'not marked reviewed (run comb mark-reviewed)' });
+  const old = computeStatus(snapshot({ proposal: PROPOSAL, review: stampReview('r', 'sha256:0000000000000000', {})! }, true), []);
+  expect(old.artifacts[2]).toEqual({ id: 'review', state: 'stale', detail: 'the delta changed since the review' });
+  expect(old.next).toBe('review');
+});
+
+it('blocks clarify while a high question is open and counts questions', () => {
+  const reviewed = stampReview('r', deltaHash(snapshot({}, true)), {})!;
+  const questions =
+    '## Q-1: a\n- **Status:** open\n- **Severity:** high\n\n## Q-2: b\n- **Status:** open\n- **Severity:** low\n\n## Q-3: c\n- **Status:** deferred\n- **Severity:** medium\n';
+  const s = computeStatus(snapshot({ proposal: PROPOSAL, review: reviewed, questions, tasks: '- [ ] a' }, true), []);
+  expect(s.artifacts[3]).toEqual({ id: 'clarify', state: 'blocked', detail: '1 high question(s) open' });
+  expect(s.next).toBe('clarify');
+  expect(s.questions).toEqual({ open: 2, openHigh: 1, answered: 0, deferred: 1 });
+  const lowOnly = computeStatus(
+    snapshot({ proposal: PROPOSAL, review: reviewed, questions: questions.replace('high', 'medium'), tasks: '- [ ] a' }, true),
+    [],
+  );
+  expect(lowOnly.artifacts[3]).toEqual({ id: 'clarify', state: 'done', detail: '2 open (medium/low)' });
+});
+
+it('marks clarify invalid for format errors in questions.md', () => {
+  const s = computeStatus(snapshot({ proposal: PROPOSAL }, true), [diag('error', 'SPEC_PARSE', 'x', { file: 'comb/changes/x/questions.md' })]);
+  expect(s.artifacts[3]).toEqual({ id: 'clarify', state: 'invalid', detail: '1 error(s)' });
+  expect(s.artifacts[1]!.state).toBe('done');
+});
 });
