@@ -38,3 +38,56 @@ Pay within 3 days.
 - **WHEN** payment arrives
 - **THEN** the order is paid
 `;
+
+export const DECISIONS_MD = `# Decisions
+
+## D-021: Price is fixed when the order is created
+- **Date:** 2026-10-01
+- **Refs:** REQ-ORDER-001
+- **Change:** seed-orders
+
+The order keeps the listing price shown at "Buy".
+
+**Why:** Later listing edits must not change an existing order.
+`;
+
+export const QUESTIONS_MD = `# Questions
+
+## Q-1: 期限後の発送を受け付けるか
+- **Status:** Answered
+- **Severity:** high
+- **Refs:** REQ-ORDER-001, REQ-ORDER-002
+- **Lens:** edge-cases
+- **Decision:** D-1
+
+The spec currently allows this sequence:
+1. The buyer pays (REQ-ORDER-002)
+
+**Options**
+- **A.** Reject — Spec change: REQ-ORDER-002 gains a deadline guard
+- **B.** Accept — Spec change: none
+
+**Recommendation:** A — a cancelled order must never ship.
+
+**Answer:** A (2026-10-06)
+
+## Q-2: Who may cancel after shipment?
+- **Status:** open
+- **Severity:** medium   # high | medium | low
+- **Refs:** REQ-ORDER-002
+
+Body.
+`;
+
+export const LOCAL_DECISIONS_MD = `# Decisions
+
+## D-1: Shipping after the deadline is rejected
+- **Date:** 2026-10-06
+- **Refs:** REQ-ORDER-002
+- **From:** Q-1
+- **Supersedes:** D-021
+
+After the deadline, "mark shipped" is rejected with SHIP_WINDOW_CLOSED.
+
+**Why:** a cancelled order must never ship.
+`;
