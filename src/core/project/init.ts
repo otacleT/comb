@@ -1,19 +1,22 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { GENERATED_MARKER, type AgentAdapter } from '../../agents/adapter.js';
+import { GENERATED_MARKER, isUnmodifiedGenerated, type AgentAdapter } from '../../agents/adapter.js';
+import { normalizeText } from '../markdown/text.js';
 import { defaultConfig, renderConfig } from './config.js';
 
 export interface InitResult {
   created: string[];
   updated: string[];
   skipped: string[];
+  /** Comb-generated files the user edited; kept as they are. */
+  modified: string[];
 }
 
 export function initProject(
   root: string,
   opts: { language: string; version: string; templatesDir: string; agents: AgentAdapter[] },
 ): InitResult {
-  const result: InitResult = { created: [], updated: [], skipped: [] };
+  const result: InitResult = { created: [], updated: [], skipped: [], modified: [] };
   const put = (relPath: string, content: string, generated: boolean): void => {
     const p = join(root, relPath);
     if (!existsSync(p)) {
@@ -23,9 +26,17 @@ export function initProject(
       return;
     }
     const existing = readFileSync(p, 'utf8');
-    if (existing !== content && generated && existing.includes(GENERATED_MARKER)) {
+    if (normalizeText(existing) === content) {
+      result.skipped.push(relPath);
+      return;
+    }
+    if (generated && isUnmodifiedGenerated(existing)) {
       writeFileSync(p, content);
       result.updated.push(relPath);
+      return;
+    }
+    if (generated && existing.includes(GENERATED_MARKER)) {
+      result.modified.push(relPath);
       return;
     }
     result.skipped.push(relPath);

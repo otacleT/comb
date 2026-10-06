@@ -12,6 +12,7 @@ const human = (r: InitResult): string =>
     ...r.created.map((f) => `created  ${f}`),
     ...r.updated.map((f) => `updated  ${f}`),
     ...r.skipped.map((f) => `kept     ${f}`),
+    ...r.modified.map((f) => `kept     ${f} (edited by you; not updated)`),
   ].join('\n');
 
 export function registerInit(program: Command, ctx: CliContext): void {

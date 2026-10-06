@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { splitFrontmatter } from '../core/markdown/frontmatter.js';
 import { normalizeText } from '../core/markdown/text.js';
-import type { AgentAdapter, GeneratedFile } from './adapter.js';
+import { stampGenerated, type AgentAdapter, type GeneratedFile } from './adapter.js';
 
 export function listWorkflows(templatesDir: string): string[] {
   return readdirSync(join(templatesDir, 'skills'))
@@ -46,8 +46,8 @@ export const claudeCode: AgentAdapter = {
         '',
       ].join('\n');
       return [
-        { path: `.claude/skills/comb-${wf}/SKILL.md`, content: skill },
-        { path: `.claude/commands/comb/${wf}.md`, content: command },
+        { path: `.claude/skills/comb-${wf}/SKILL.md`, content: stampGenerated(skill) },
+        { path: `.claude/commands/comb/${wf}.md`, content: stampGenerated(command) },
       ];
     });
   },

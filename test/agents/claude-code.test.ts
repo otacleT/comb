@@ -19,7 +19,8 @@ describe('claude-code adapter', () => {
     const skill = files[2]!.content;
     const fm = splitFrontmatter(skill);
     expect(fm.error).toBeNull();
-    expect(fm.data).toMatchObject({ name: 'comb-propose', 'allowed-tools': 'Bash(comb:*)', metadata: { generatedBy: 'comb@9.9.9' } });
+    expect(fm.data).toMatchObject({ name: 'comb-propose', 'allowed-tools': 'Bash(comb:*)' });
+    expect(String((fm.data.metadata as { generatedBy: string }).generatedBy)).toMatch(/^comb@9\.9\.9 sha256:[0-9a-f]{16}$/);
     expect(String(fm.data.description)).toContain('Comb change');
     expect(skill).toContain('comb instructions proposal');
     const command = files[3]!.content;

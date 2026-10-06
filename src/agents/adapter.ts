@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto';
+import { normalizeText } from '../core/markdown/text.js';
+
 export interface GeneratedFile {
   path: string;
   content: string;
@@ -10,3 +13,22 @@ export interface AgentAdapter {
 
 /** Every file Comb generates contains this marker; files without it are user-owned. */
 export const GENERATED_MARKER = 'generatedBy: comb@';
+
+const MARKER_LINE_RE = /^.*generatedBy: comb@.*(?:\n|$)/m;
+const RECORDED_HASH_RE = /generatedBy: comb@\S+ sha256:([0-9a-f]{16})/;
+
+/** Hash of a generated file without its marker line, with line endings normalized. */
+export function bodyHash(content: string): string {
+  return createHash('sha256').update(normalizeText(content).replace(MARKER_LINE_RE, '')).digest('hex').slice(0, 16);
+}
+
+/** Records the body hash next to the marker so later runs can tell untouched files from edited ones. */
+export function stampGenerated(content: string): string {
+  return content.replace(/(generatedBy: comb@\S+)/, `$1 sha256:${bodyHash(content)}`);
+}
+
+/** True when the file still has exactly the content Comb generated (a user edit changes the body hash). */
+export function isUnmodifiedGenerated(content: string): boolean {
+  const m = RECORDED_HASH_RE.exec(content);
+  return m !== null && m[1] === bodyHash(content);
+}
