@@ -5,13 +5,8 @@
 ## Run
 
 ```bash
-B=$(mktemp -d) && cp -R bench/order-lifecycle/project/. "$B" && cd "$B"
-git init -q && comb init --language en && git add -A && git commit -qm base
-claude -p '/comb:review add-order-lifecycle' --permission-mode acceptEdits \
-  --allowedTools "Bash(comb:*)" Read Write Edit Glob Grep --output-format stream-json --verbose > review.jsonl
-comb validate --change add-order-lifecycle && comb status --change add-order-lifecycle
+npm run build
+node bench/run.mjs order-lifecycle --runs 2
 ```
 
-## Judge
-
-For each row of `expected-highs.md`, find the question in `comb/changes/add-order-lifecycle/questions.md` that has the same root cause (the sequence and the conflict, not just the topic). Record the matches in `docs/experience-log.md`. E3 passes with at least 5 of 7.
+The runner copies `project/` to a temp folder, runs `/comb:review add-order-lifecycle` there, and grades the questions with a separate `claude -p` grader against `expected-highs.md` (strict root-cause matching). Results go to `bench/results/`. E3 passes with at least 5 of 7.
