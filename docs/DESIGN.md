@@ -140,7 +140,8 @@ prefix: ORDER          # 新しい capability を作るときだけ必須
 ```
 
 - 対象は **ID で特定**する。OpenSpec のように見出しのテキストでは特定しない。そのため RENAMED は不要で、タイトルの変更は MODIFIED で行う。
-- 新しい capability を作るときは、delta に `## Purpose` を含める。
+- 新しい capability を作るときは、delta に `## Purpose` を含める。既存の capability の Purpose は、`## Purpose` か `MODIFIED Sections` の `Section: Purpose` で置き換える。
+- `Section: Requirements` は使えない（`SPEC_PARSE`）。正本の要件が隠れてしまうため。
 - `(D-n)` のように、change ローカルの Decision を本文で参照してよい。archive のときに恒久IDへ書き換える。
 
 ### 3.3 `proposal.md`

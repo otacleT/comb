@@ -14,8 +14,8 @@ export interface ApplyResult {
 
 export const sectionKey = (heading: string): string => `Section: ${heading}`;
 
-/** Section names with a structural meaning; a delta Section must not use them. */
-const RESERVED_SECTIONS = new Set(['Requirements', 'Purpose']);
+/** A delta Section must not be named like the Requirements heading, or the requirements would be hidden. */
+const RESERVED_SECTIONS = new Set(['Requirements']);
 
 /** Replaces text[start, end) with `insert` (deletes it when empty), leaving one blank line before what follows. */
 function splice(text: string, start: number, end: number, insert: string): string {

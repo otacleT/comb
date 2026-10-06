@@ -87,6 +87,12 @@ export function validateDelta(
   for (const [id, kinds] of where) {
     if (kinds.length > 1) out.push(diag('error', 'DELTA_CONFLICT', `${id} appears in ${kinds.join(' and ')}`, { file, id }));
   }
+  for (const s of [...delta.addedSections, ...delta.modifiedSections]) {
+    if (s.heading === 'Requirements') {
+      out.push(diag('error', 'SPEC_PARSE', 'a delta section cannot be named "Requirements"', { file, line: s.line },
+        'Change requirements under ADDED / MODIFIED / REMOVED Requirements'));
+    }
+  }
   const baseSections = new Set((base?.sections ?? []).map((s) => s.heading));
   for (const s of delta.modifiedSections) {
     if (!baseSections.has(s.heading)) out.push(diag('error', 'DELTA_TARGET_MISSING', `section "${s.heading}" does not exist`, { file, line: s.line }));

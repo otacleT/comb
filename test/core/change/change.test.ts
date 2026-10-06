@@ -6,6 +6,7 @@ import { validateChange, validateProject } from '../../../src/core/change/valida
 import { loadAllChanges, loadChange, loadProject } from '../../../src/core/project/load.js';
 import { CONFIG_YAML, DECISIONS_MD, metaYaml, ORDER_SPEC } from '../../helpers/fixtures.js';
 import { makeProject } from '../../helpers/project.js';
+import { readyProject, TIGHTEN_DECISIONS } from '../../helpers/archive.js';
 
 const scenario = '\n#### Scenario: s\n- **GIVEN** a\n';
 const addDelta = (id: string) => `## ADDED Requirements\n\n### Requirement: ${id} New\nx\n${scenario}`;
@@ -86,5 +87,25 @@ describe('validation across a project', () => {
     expect(validateChange(project, b, all).map((d) => d.code).sort()).toEqual(['DELTA_TARGET_MISSING', 'REQ_ID_DUPLICATE']);
     const a = all.find((c) => c.id === 'a')!;
     expect(validateChange(project, a, [a])).toEqual([]);
+  });
+});
+
+describe('decision conflicts that archive would hit', () => {
+  const conflicts = (root: string) => {
+    const all = loadAllChanges(root);
+    return validateChange(loadProject(root), all[0]!, all).map((d) => [d.code, d.target?.id]);
+  };
+
+  it('reports a local decision id that is also a canonical id', () => {
+    const root = readyProject({ 'comb/decisions.md': `${DECISIONS_MD}\n## D-1: Hand-written\n- **Date:** 2026-10-01\n\nrule\n\n**Why:** w\n` });
+    expect(conflicts(root)).toEqual([['DECISION_ID_CONFLICT', 'D-1']]);
+  });
+
+  it('reports superseding a decision that is already superseded', () => {
+    const root = readyProject({
+      'comb/decisions.md': DECISIONS_MD.replace('- **Change:** seed-orders', '- **Change:** seed-orders\n- **Superseded by:** D-030'),
+      'comb/changes/tighten-payment/decisions.md': TIGHTEN_DECISIONS.replace('- **From:** Q-1', '- **From:** Q-1\n- **Supersedes:** D-021'),
+    });
+    expect(conflicts(root)).toEqual([['DECISION_ID_CONFLICT', 'D-1']]);
   });
 });

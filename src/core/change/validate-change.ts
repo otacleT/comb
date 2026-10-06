@@ -1,5 +1,6 @@
 import { diag, type Diagnostic } from '../diagnostics.js';
 import type { ChangeSnapshot, Project } from '../project/load.js';
+import type { Decision } from '../decision/model.js';
 import { parseDecisions, parseQuestions } from '../decision/parse.js';
 import { checkDecisionRefs, validateDecisions, validateQuestions } from '../decision/validate.js';
 import { paths, rel } from '../project/paths.js';
@@ -8,10 +9,27 @@ import { baseDrift } from './base.js';
 
 const CANONICAL_DECISIONS_FILE = 'comb/decisions.md';
 
-const canonicalDecisionIds = (project: Project): { ids: Set<string>; diagnostics: Diagnostic[] } => {
+const canonicalDecisionIds = (project: Project): { ids: Set<string>; decisions: Decision[]; diagnostics: Diagnostic[] } => {
   const parsed = parseDecisions(project.decisionsText ?? '', CANONICAL_DECISIONS_FILE);
-  return { ids: new Set(parsed.decisions.map((d) => d.id)), diagnostics: parsed.diagnostics };
+  return { ids: new Set(parsed.decisions.map((d) => d.id)), decisions: parsed.decisions, diagnostics: parsed.diagnostics };
 };
+
+/** Conflicts that would stop `comb archive` (DESIGN §5.3), reported while the change is still being worked on. */
+function decisionConflicts(local: Decision[], canonical: Decision[], file: string): Diagnostic[] {
+  const out: Diagnostic[] = [];
+  for (const d of local) {
+    const t = { file, line: d.line, id: d.id };
+    if (canonical.some((c) => c.id === d.id)) {
+      out.push(diag('error', 'DECISION_ID_CONFLICT', `${d.id} is also a decision in ${CANONICAL_DECISIONS_FILE}, so references to it are ambiguous`, t,
+        'Renumber the local decision and its references'));
+    }
+    const replaced = canonical.find((c) => c.id === d.supersedes)?.supersededBy;
+    if (replaced) {
+      out.push(diag('error', 'DECISION_ID_CONFLICT', `${d.supersedes} is already superseded by ${replaced}`, t, `Supersede ${replaced} instead`));
+    }
+  }
+  return out;
+}
 
 export function validateProject(project: Project): Diagnostic[] {
   const out: Diagnostic[] = [...project.diagnostics];
@@ -100,6 +118,7 @@ export function validateChange(project: Project, change: ChangeSnapshot, all: Ch
     questions: new Set(questions.questions.map((q) => q.id)),
   };
   out.push(...validateQuestions(questions.questions, questionsFile, ctx), ...validateDecisions(decisions.decisions, decisionsFile, ctx));
+  out.push(...decisionConflicts(decisions.decisions, canonical.decisions, decisionsFile));
   const knownDecisions = new Set([...ctx.canonicalDecisions, ...ctx.localDecisions]);
   for (const d of change.deltas) {
     for (const r of [...d.delta.added, ...d.delta.modified]) {

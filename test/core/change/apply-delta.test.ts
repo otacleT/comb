@@ -109,6 +109,12 @@ describe('applyDelta', () => {
     expect(r.text).toBe(ORDER_SPEC);
   });
 
+  it('replaces the Purpose through MODIFIED Sections', () => {
+    const { text, diagnostics } = applyDelta(ORDER_SPEC, delta('## MODIFIED Sections\n\n### Section: Purpose\n注文と返品のライフサイクル。\n'), 'd.md');
+    expect(diagnostics).toEqual([]);
+    expect(parseSpec(text, 'order-lifecycle', 's.md').capability.purpose).toBe('注文と返品のライフサイクル。');
+  });
+
   it('refuses a section named Requirements instead of hiding the requirements', () => {
     const r = applyDelta(ORDER_SPEC, delta('## ADDED Sections\n\n### Section: Requirements\nnothing\n'), 'd.md');
     expect(r.diagnostics.map((d) => d.code)).toEqual(['SPEC_PARSE']);
