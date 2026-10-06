@@ -424,6 +424,17 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 
 終了コード：0 = ok、1 = 検査エラーまたはゲート未達、2 = 使い方の誤り、3 = 内部エラー。
 
+4章の表のほかに、CLI と構成についてのエラーコードを使う。
+
+| コード | 終了コード | 内容 |
+|---|---|---|
+| `NOT_A_COMB_PROJECT` | 2 | カレントディレクトリとその親に `comb/config.yaml` がない |
+| `CHANGE_NOT_FOUND` / `UNKNOWN_ARTIFACT` / `UNKNOWN_AGENT` | 2 | 指定した change、成果物、エージェントが存在しない |
+| `CHANGE_ID_INVALID` / `CHANGE_EXISTS` | 1 | change ID が kebab-case でない、またはすでに存在する |
+| `CHANGE_META_INVALID` | 1 | `.comb.yaml` がない、または読めない |
+| `CONFIG_INVALID` | 1 | `config.yaml` の型や値が不正（context が 16KB を超える場合を含む） |
+| `DELTA_EMPTY` | 1 | delta に変更が1つもない |
+
 `instructions` の `data` は次の形。
 
 ```json
@@ -463,7 +474,7 @@ test/
 bench/                 # S2：レビューの再現率を測るベンチマーク
 ```
 
-- 依存は最小限にする：commander、unified / remark-parse、yaml、zod。テストは vitest。
+- 依存は最小限にする：commander、yaml、mdast-util-from-markdown、mdast-util-to-string（remark のパーサの中核）。テストは vitest。config の検証は手書きで行う（zod は必要になるまで入れない）。
 - Node 20 以上。npm で配布する。パッケージ名は未決で、コマンド名は `comb`（npm の `comb` は使用済み。候補は `@otaclet/comb`）。
 - `core/` の関数は、ファイル入出力を持たない純粋関数を基本にする。入出力は `project/` と `change/` の archive トランザクションに閉じ込める。
 - テレメトリはなし。
