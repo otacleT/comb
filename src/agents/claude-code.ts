@@ -34,13 +34,18 @@ export const claudeCode: AgentAdapter = {
         '',
         body,
       ].join('\n');
+      // The slash command carries the workflow itself (same template as the skill) instead of
+      // handing off to the Skill tool, which would need a separate permission on every use.
       const command = [
         '---',
         `description: ${JSON.stringify(description)}`,
+        'allowed-tools: Bash(comb:*)',
         '---',
         `<!-- generatedBy: comb@${version} -->`,
         '',
-        `Use the comb-${wf} skill for this request.`,
+        body.trimEnd(),
+        '',
+        "## The user's request",
         '',
         '$ARGUMENTS',
         '',

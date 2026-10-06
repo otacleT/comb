@@ -24,8 +24,13 @@ describe('claude-code adapter', () => {
     expect(String(fm.data.description)).toContain('Comb change');
     expect(skill).toContain('comb instructions proposal');
     const command = files[3]!.content;
+    const commandFm = splitFrontmatter(command);
+    expect(commandFm.error).toBeNull();
+    expect(commandFm.data).toMatchObject({ 'allowed-tools': 'Bash(comb:*)' });
     expect(command).toContain('generatedBy: comb@9.9.9');
-    expect(command).toContain('Use the comb-propose skill');
+    // The command carries the workflow itself, so no hand-off to the Skill tool (and no extra permission) is needed.
+    expect(command).not.toContain('Use the comb-propose skill');
+    expect(command).toContain('comb instructions proposal');
     expect(command).toContain('$ARGUMENTS');
   });
 });
