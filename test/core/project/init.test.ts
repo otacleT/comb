@@ -18,10 +18,14 @@ describe('initProject', () => {
       'comb/decisions.md',
       'comb/specs/.gitkeep',
       'comb/changes/archive/.gitkeep',
+      '.claude/skills/comb-clarify/SKILL.md',
+      '.claude/commands/comb/clarify.md',
       '.claude/skills/comb-explore/SKILL.md',
       '.claude/commands/comb/explore.md',
       '.claude/skills/comb-propose/SKILL.md',
       '.claude/commands/comb/propose.md',
+      '.claude/skills/comb-review/SKILL.md',
+      '.claude/commands/comb/review.md',
     ]);
     const { config, diagnostics } = parseConfig(readFileSync(join(root, 'comb/config.yaml'), 'utf8'), 'c');
     expect(diagnostics).toEqual([]);
