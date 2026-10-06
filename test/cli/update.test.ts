@@ -1,0 +1,60 @@
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { claudeCode } from '../../src/agents/claude-code.js';
+import { runCli } from '../../src/cli/app.js';
+import { initProject } from '../../src/core/project/init.js';
+import { TEMPLATES_DIR } from '../../src/templates-dir.js';
+import { VERSION } from '../../src/version.js';
+import { makeProject } from '../helpers/project.js';
+
+const SKILL = '.claude/skills/comb-review/SKILL.md';
+const read = (root: string, p: string) => readFileSync(join(root, p), 'utf8');
+
+/** A project initialized by an older comb. */
+const olderProject = (): string => {
+  const root = makeProject({});
+  initProject(root, { language: 'ja', version: '0.0.0', templatesDir: TEMPLATES_DIR, agents: [claudeCode] });
+  return root;
+};
+
+describe('comb update', () => {
+  it('regenerates untouched generated files and recreates missing ones, leaving config and user files alone', async () => {
+    const root = olderProject();
+    rmSync(join(root, '.claude/commands/comb/apply.md'));
+    mkdirSync(join(root, '.claude/skills/my-own'), { recursive: true });
+    writeFileSync(join(root, '.claude/skills/my-own/SKILL.md'), '# mine\n');
+    const config = read(root, 'comb/config.yaml');
+    const r = await runCli(['update', '--json'], root);
+    expect(r.code).toBe(0);
+    const data = JSON.parse(r.stdout).data;
+    expect(data.updated).toContain(SKILL);
+    expect(data.created).toEqual(['.claude/commands/comb/apply.md']);
+    expect(data.modified).toEqual([]);
+    expect(read(root, SKILL)).toContain(`generatedBy: comb@${VERSION}`);
+    expect(read(root, 'comb/config.yaml')).toBe(config);
+    expect(read(root, '.claude/skills/my-own/SKILL.md')).toBe('# mine\n');
+  });
+
+  it('keeps generated files the user edited', async () => {
+    const root = olderProject();
+    writeFileSync(join(root, SKILL), `${read(root, SKILL)}\nMy own note.\n`);
+    const data = JSON.parse((await runCli(['update', '--json'], root)).stdout).data;
+    expect(data.modified).toEqual([SKILL]);
+    expect(read(root, SKILL)).toContain('My own note.');
+  });
+
+  it('fails with NOT_A_COMB_PROJECT outside a project', async () => {
+    const r = await runCli(['update', '--json'], makeProject({}));
+    expect(r.code).toBe(2);
+    expect(JSON.parse(r.stdout).diagnostics[0].code).toBe('NOT_A_COMB_PROJECT');
+  });
+
+  it('reports an unknown agent in the config', async () => {
+    const root = olderProject();
+    writeFileSync(join(root, 'comb/config.yaml'), 'version: 1\nlanguage: ja\nagents: [nope]\n');
+    const r = await runCli(['update', '--json'], root);
+    expect(r.code).toBe(2);
+    expect(JSON.parse(r.stdout).diagnostics[0].code).toBe('UNKNOWN_AGENT');
+  });
+});

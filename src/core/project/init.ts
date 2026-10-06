@@ -12,12 +12,13 @@ export interface InitResult {
   modified: string[];
 }
 
-export function initProject(
-  root: string,
-  opts: { language: string; version: string; templatesDir: string; agents: AgentAdapter[] },
-): InitResult {
-  const result: InitResult = { created: [], updated: [], skipped: [], modified: [] };
-  const put = (relPath: string, content: string, generated: boolean): void => {
+type Put = (relPath: string, content: string, generated: boolean) => void;
+
+const emptyResult = (): InitResult => ({ created: [], updated: [], skipped: [], modified: [] });
+
+/** Writes a file unless that would overwrite a user file or a generated file the user edited. */
+function writer(root: string, result: InitResult): Put {
+  return (relPath, content, generated) => {
     const p = join(root, relPath);
     if (!existsSync(p)) {
       mkdirSync(dirname(p), { recursive: true });
@@ -41,14 +42,36 @@ export function initProject(
     }
     result.skipped.push(relPath);
   };
+}
+
+interface AgentOptions {
+  version: string;
+  templatesDir: string;
+  agents: AgentAdapter[];
+}
+
+const putAgentFiles = (put: Put, opts: AgentOptions): void => {
+  for (const agent of opts.agents) {
+    for (const f of agent.files(opts.templatesDir, opts.version)) put(f.path, f.content, true);
+  }
+};
+
+export function initProject(root: string, opts: AgentOptions & { language: string }): InitResult {
+  const result = emptyResult();
+  const put = writer(root, result);
   const config = defaultConfig(opts.language);
   config.agents = opts.agents.map((a) => a.id);
   put('comb/config.yaml', renderConfig(config), false);
   put('comb/decisions.md', '# Decisions\n', false);
   put('comb/specs/.gitkeep', '', false);
   put('comb/changes/archive/.gitkeep', '', false);
-  for (const agent of opts.agents) {
-    for (const f of agent.files(opts.templatesDir, opts.version)) put(f.path, f.content, true);
-  }
+  putAgentFiles(put, opts);
+  return result;
+}
+
+/** S3 (`comb update`): regenerates the agent files only. The config, the specs and files the user edited stay as they are. */
+export function updateAgentFiles(root: string, opts: AgentOptions): InitResult {
+  const result = emptyResult();
+  putAgentFiles(writer(root, result), opts);
   return result;
 }

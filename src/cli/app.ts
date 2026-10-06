@@ -8,6 +8,7 @@ import { registerMarkReviewed } from './commands/mark-reviewed.js';
 import { registerNewChange } from './commands/new-change.js';
 import { registerShow } from './commands/show.js';
 import { registerStatus } from './commands/status.js';
+import { registerUpdate } from './commands/update.js';
 import { registerValidate } from './commands/validate.js';
 import { diag } from '../core/diagnostics.js';
 import { envelope, EXIT, render } from './output.js';
@@ -27,7 +28,7 @@ export interface CliResult {
 
 export type Registrar = (program: Command, ctx: CliContext) => void;
 
-const registrars: Registrar[] = [registerInit, registerNewChange, registerValidate, registerStatus, registerInstructions, registerMarkReviewed, registerArchive, registerList, registerShow];
+const registrars: Registrar[] = [registerInit, registerNewChange, registerValidate, registerStatus, registerInstructions, registerMarkReviewed, registerArchive, registerList, registerShow, registerUpdate];
 
 export async function runCli(argv: string[], cwd: string, opts: { today?: () => string } = {}): Promise<CliResult> {
   let stdout = '';

@@ -7,7 +7,7 @@ import type { CliContext } from '../app.js';
 import { envelope } from '../output.js';
 import { finish, usageError } from './shared.js';
 
-const human = (r: InitResult): string =>
+export const describeInit = (r: InitResult): string =>
   [
     ...r.created.map((f) => `created  ${f}`),
     ...r.updated.map((f) => `updated  ${f}`),
@@ -30,6 +30,6 @@ export function registerInit(program: Command, ctx: CliContext): void {
         return;
       }
       const result = initProject(ctx.cwd, { language: opts.language, version: VERSION, templatesDir: TEMPLATES_DIR, agents: [agent] });
-      finish(ctx, envelope('init', result, []), json, human);
+      finish(ctx, envelope('init', result, []), json, describeInit);
     });
 }
