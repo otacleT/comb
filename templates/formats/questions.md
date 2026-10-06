@@ -12,8 +12,8 @@ The spec currently allows this sequence:
 Result: <what goes wrong>. This conflicts with REQ-ORDER-005 "<quote>".
 
 **Options**
-- **A.** <behavior> — Spec change: <which requirement gains or changes what>
-- **B.** <behavior> — Spec change: <…>
+- **A.** <behavior> — Spec change: <which requirement gains or changes what> — New: <states, fields, records, operations or flows it adds, or "nothing">
+- **B.** <behavior> — Spec change: <…> — New: <…>
 - **C.** Specify a different rule
 
 **Recommendation:** A — <one-line reason>

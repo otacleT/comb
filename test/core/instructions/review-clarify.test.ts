@@ -101,6 +101,15 @@ describe('review lenses', () => {
     expect(readFileSync(join(TEMPLATES_DIR, 'formats', 'review.md'), 'utf8')).toMatch(/timer table.*money table/i);
   });
 
+  it('makes every option declare what it adds and biases the recommendation to the smallest change', () => {
+    const read = (dir: string, id: string) => readFileSync(join(TEMPLATES_DIR, dir, `${id}.md`), 'utf8');
+    expect(read('formats', 'questions')).toMatch(/- \*\*A\.\*\* .*Spec change: .*New: /);
+    const review = read('instructions', 'review');
+    expect(review).toContain('smallest spec change');
+    expect(review).toContain('"New:"');
+    expect(read('instructions', 'clarify')).toContain('what each option adds');
+  });
+
   it('keeps the edge-case lens from dismissing sequences because steps are serialized', () => {
     expect(lens('edge-cases')).toContain('Serialization');
   });
