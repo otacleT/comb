@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { childBlocks, headingBlocks } from '../../src/core/markdown/blocks.js';
 import { splitFrontmatter } from '../../src/core/markdown/frontmatter.js';
-import { lineOf, normalizeText } from '../../src/core/markdown/text.js';
+import { lineOf, normalizeText, restoreTextStyle } from '../../src/core/markdown/text.js';
 
 describe('normalizeText', () => {
   it('strips the BOM and converts CRLF/CR to LF', () => {
-    expect(normalizeText('﻿a\r\nb\rc')).toBe('a\nb\nc');
+    expect(normalizeText('\uFEFFa\r\nb\rc')).toBe('a\nb\nc');
   });
 });
 
@@ -98,5 +98,12 @@ describe('headingBlocks', () => {
     expect(bs).toHaveLength(1);
     expect(bs[0]!.start).toBe(fm.bodyOffset);
     expect(bs[0]!.line).toBe(4);
+  });
+});
+
+describe('restoreTextStyle', () => {
+  it('re-applies the BOM and CRLF line endings of the original file', () => {
+    expect(restoreTextStyle('\uFEFFa\r\nb\r\n', 'x\ny\n')).toBe('\uFEFFx\r\ny\r\n');
+    expect(restoreTextStyle('a\nb\n', 'x\ny\n')).toBe('x\ny\n');
   });
 });

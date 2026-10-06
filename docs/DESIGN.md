@@ -356,8 +356,8 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
    - 新しい capability は `spec.md` を新しく作る。
 5. Decision を `comb/decisions.md` に追記する（`Change:` を付ける）。`Supersedes` の対象には `Superseded by` を追記する。
 6. 適用後の正本を再検査する。error があれば中止し、何も書かない。
-7. 変更するすべてのファイルを一時ファイルに書き、rename でまとめて反映する。最後に change を `changes/archive/YYYY-MM-DD-<id>/` に移す。
-8. **冪等性**：同じ内容がすでに適用済みなら、その操作はスキップする。ADDED は同じ ID の同一ブロックがあれば、MODIFIED は同一内容ならスキップする。
+7. 変更するすべてのファイルを一時ファイルに書く。次に change を `changes/archive/YYYY-MM-DD-<id>/` に移し、最後に一時ファイルを rename でまとめて反映する。移動に失敗したら、正本は変わらない。移動先がすでにあれば、何も書かずに中止する（`ARCHIVE_TARGET_EXISTS`）。既存のファイルを書き換えるときは、BOM と CRLF の改行を元のファイルに合わせる。
+8. **冪等性**：同じ内容がすでに適用済みなら、その操作はスキップする。ADDED は同じ ID の同一ブロックがあれば、MODIFIED は同一内容ならスキップする。archive が終わった change は `changes/` からなくなるので、同じ `comb archive <id>` を再実行しても `CHANGE_NOT_FOUND` になり、何も変わらない。途中で中断した archive は再開しない（正本は Git で戻す）。
 
 ## 6. レビューの観点（lenses）
 
@@ -440,6 +440,7 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | `DELTA_EMPTY` | 1 | delta に変更が1つもない |
 | `ARCHIVE_BLOCKED` | 1 | archive の条件（5.1）を満たしていない。満たしていない条件ごとに1件出し、fix に解消の方法やフラグを書く |
 | `DECISION_ID_CONFLICT` | 1 | change ローカルの Decision ID と同じ文字列の ID が正本にある、または Supersedes の対象がすでに別の Decision に置き換えられている |
+| `ARCHIVE_TARGET_EXISTS` | 1 | archive の移動先のフォルダがすでにある |
 
 `instructions` の `data` は次の形。
 

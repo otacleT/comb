@@ -1,5 +1,6 @@
 import { Command, CommanderError } from 'commander';
 import { VERSION } from '../version.js';
+import { registerArchive } from './commands/archive.js';
 import { registerInit } from './commands/init.js';
 import { registerInstructions } from './commands/instructions.js';
 import { registerMarkReviewed } from './commands/mark-reviewed.js';
@@ -24,7 +25,7 @@ export interface CliResult {
 
 export type Registrar = (program: Command, ctx: CliContext) => void;
 
-const registrars: Registrar[] = [registerInit, registerNewChange, registerValidate, registerStatus, registerInstructions, registerMarkReviewed];
+const registrars: Registrar[] = [registerInit, registerNewChange, registerValidate, registerStatus, registerInstructions, registerMarkReviewed, registerArchive];
 
 export async function runCli(argv: string[], cwd: string, opts: { today?: () => string } = {}): Promise<CliResult> {
   let stdout = '';
