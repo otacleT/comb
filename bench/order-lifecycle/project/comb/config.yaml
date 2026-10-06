@@ -1,0 +1,4 @@
+version: 1
+language: en
+agents: [claude-code]
+context: "Kurumi, a C2C marketplace for second-hand goods (like Mercari). MVP order lifecycle."
