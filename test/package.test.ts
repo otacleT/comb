@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
@@ -20,4 +21,23 @@ describe('package.json', () => {
       if (theirs) expect(compare(ours!, theirs), `${dep} needs node >=${theirs.join('.')}`).toBeGreaterThanOrEqual(0);
     }
   });
+
+  it('is @otaclet/comb 0.1.0 with a changelog entry, a license and a build before packing', () => {
+    const pkg = readJson('package.json');
+    expect(pkg.name).toBe('@otaclet/comb');
+    expect(pkg.version).toBe('0.1.0');
+    expect(pkg.scripts.prepack).toBe('npm run build');
+    expect(readFileSync('CHANGELOG.md', 'utf8')).toContain('## 0.1.0');
+    expect(readFileSync('LICENSE', 'utf8')).toContain('MIT License');
+  });
+
+  it('packs only the CLI, the templates and the files a user reads', () => {
+    const out = execFileSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const files: string[] = JSON.parse(out.slice(out.indexOf('[')))[0].files.map((f: { path: string }) => f.path);
+    const allowed = /^(dist\/|templates\/|package\.json$|README\.md$|LICENSE$|CHANGELOG\.md$)/;
+    expect(files.filter((f) => !allowed.test(f))).toEqual([]);
+    for (const f of ['templates/skills/archive.md', 'templates/lenses/formalization.md', 'LICENSE', 'CHANGELOG.md', 'README.md']) {
+      expect(files).toContain(f);
+    }
+  }, 30000);
 });

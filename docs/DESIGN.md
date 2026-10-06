@@ -485,7 +485,7 @@ bench/                 # S2：レビューの再現率を測るベンチマー�
 ```
 
 - 依存は最小限にする：commander、yaml、mdast-util-from-markdown、mdast-util-to-string（remark のパーサの中核）。テストは vitest。config の検証は手書きで行う（zod は必要になるまで入れない）。
-- Node 22.12 以上（D-017）。npm で配布する。パッケージ名は未決で、コマンド名は `comb`（npm の `comb` は使用済み。候補は `@otaclet/comb`）。
+- Node 22.12 以上（D-017）。npm で配布する。パッケージ名は `@otaclet/comb`（D-020）で、コマンド名は `comb`（npm の `comb` は使用済み。候補は `@otaclet/comb`）。
 - `core/` の関数は、ファイル入出力を持たない純粋関数を基本にする。入出力は `project/` と `change/` の archive トランザクションに閉じ込める。
 - テレメトリはなし。
 
@@ -532,5 +532,5 @@ bench/                 # S2：レビューの再現率を測るベンチマー�
 | clarify の操作性（エージェントによって質問 UI が違う） | Skill が UI の有無で振る舞いを分ける。テキストへのフォールバックを用意する |
 | 仕様が大きいとコンテキストが足りない | `instructions` が読むべきファイルを絞って返す。Decision は要約を返す |
 | 同じ要件を複数の change が同時に変える | S1（ベースのハッシュ）で archive 前に検出する。v0 では自動の rebase はしない |
-| npm のパッケージ名 | 公開前に決める（候補 `@otaclet/comb`） |
+| npm のパッケージ名 | `@otaclet/comb` に決定。最初の公開は 0.1.0（D-020） |
 | 日本語の本文に英語の構造キーワードが混ざる | 解析の確実さを優先して許容する（D-013） |

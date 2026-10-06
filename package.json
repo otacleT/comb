@@ -1,14 +1,26 @@
 {
   "name": "@otaclet/comb",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "From tangled ideas to decided specs.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/otacleT/comb.git"
+  },
+  "keywords": [
+    "spec-driven-development",
+    "claude-code",
+    "specs",
+    "cli",
+    "ai-agents"
+  ],
   "type": "module",
   "bin": {
     "comb": "dist/cli/index.js"
   },
   "files": [
     "dist",
-    "templates"
+    "templates",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=22.12"
@@ -16,7 +28,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepack": "npm run build"
   },
   "license": "MIT",
   "dependencies": {

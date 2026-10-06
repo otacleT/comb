@@ -147,3 +147,11 @@ E4 の合格条件は次の3つとする。(1) 回答から Decision が作ら�
 成果物の順（proposal → delta → review → clarify → tasks → apply）で、最初に done でないものを next にする。delta が invalid で、review も stale なときは delta が先になる。
 
 **Why:** レビューのエージェントは delta を編集しないので、delta が invalid なまま review を勧めても進めない。DESIGN の当初の記述（stale な review を優先）は、この場合を考えていなかった。ユーザーが 2026-10-06 に選んだ。
+
+## D-020: npm のパッケージ名は @otaclet/comb、最初の公開バージョンは 0.1.0
+- **Date:** 2026-10-06
+- **Refs:** DESIGN 7.3, DESIGN 10, package.json
+
+コマンド名は `comb` のまま。M4 では公開の準備（LICENSE、CHANGELOG、README、`npm pack` の中身の検査）までを行い、`npm publish` はユーザーが行う。
+
+**Why:** npm の `comb` は使用済みのため、スコープ付きの名前にする（DESIGN の候補どおり）。v0 の機能（M1〜M3）がそろったので、最初の公開を 0.1.0 とする。ユーザーが 2026-10-06 に選んだ。
