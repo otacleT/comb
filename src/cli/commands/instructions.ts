@@ -8,11 +8,15 @@ import { finish, requireRoot, usageError } from './shared.js';
 
 const human = (i: Instructions): string =>
   [
-    `# ${i.artifact} for ${i.change} → ${i.outputPath}`,
+    `# ${i.artifact} for ${i.change} → ${i.outputPath}${i.alsoWrite.length > 0 ? ` (also: ${i.alsoWrite.join(', ')})` : ''}`,
     i.instruction.trim(),
     i.rules.length > 0 ? `Rules:\n${i.rules.map((r) => `- ${r}`).join('\n')}` : '',
     `Read first:\n${i.context.readFiles.map((f) => `- ${f}`).join('\n') || '- (none)'}`,
-    `Next requirement ids: ${JSON.stringify(i.ids.nextRequirement)}`,
+    i.context.openQuestions.length > 0
+      ? `Open questions:\n${i.context.openQuestions.map((q) => `- ${q.id} (${q.severity}) ${q.title}`).join('\n')}`
+      : '',
+    i.lenses.length > 0 ? i.lenses.map((l) => l.definition.trim()).join('\n\n') : '',
+    `Next ids: ${JSON.stringify({ ...i.ids.nextRequirement, question: i.ids.nextQuestion, decision: i.ids.nextDecision })}`,
     `Template:\n${i.template.trim()}`,
   ]
     .filter((s) => s.length > 0)
