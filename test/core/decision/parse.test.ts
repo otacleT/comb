@@ -40,6 +40,49 @@ describe('parseQuestions', () => {
   });
 });
 
+describe('parseQuestions: headings and fields an LLM gets slightly wrong', () => {
+  it('reports a question heading at the wrong level instead of dropping it', () => {
+    const text = '# Questions\n\n### Q-1: a\n- **Status:** open\n- **Severity:** high\n';
+    const { questions, diagnostics } = parseQuestions(text, 'q.md');
+    expect(questions).toEqual([]);
+    expect(diagnostics.map((d) => [d.code, d.target?.line, d.fix])).toEqual([['SPEC_PARSE', 3, 'Use "## Q-<n>: <question>"']]);
+  });
+
+  it('reports a question nested under another question', () => {
+    const text = '## Q-1: a\n- **Status:** open\n- **Severity:** low\n\n### Q-2: b\n- **Status:** open\n- **Severity:** high\n';
+    expect(parseQuestions(text, 'q.md').diagnostics.map((d) => [d.code, d.target?.line])).toEqual([['SPEC_PARSE', 5]]);
+  });
+
+  it('reads status and severity written with common variations', () => {
+    const text = [
+      '## Q-1: a', '- **Status**: open', '- **Severity**: high', '',
+      '## Q-2: b', '- **Status:** answered (2026-10-05)', '- **Severity:** `medium`', '',
+      '## Q-3: c', '- **Status:** deferred <!-- later -->', '- **Severity:** **Low**', '',
+    ].join('\n');
+    const { questions, diagnostics } = parseQuestions(text, 'q.md');
+    expect(diagnostics).toEqual([]);
+    expect(questions.map((q) => [q.id, q.status, q.severity])).toEqual([
+      ['Q-1', 'open', 'high'],
+      ['Q-2', 'answered', 'medium'],
+      ['Q-3', 'deferred', 'low'],
+    ]);
+  });
+
+  it('separates a missing field from a bad value, each with a fix', () => {
+    const text = '## Q-1: a\n- **Severity:** urgent\n';
+    const { diagnostics } = parseQuestions(text, 'q.md');
+    expect(diagnostics.map((d) => d.message)).toEqual(['Q-1: Status is missing', 'Q-1: Severity "urgent" is not one of high, medium, low']);
+    expect(diagnostics.every((d) => d.fix !== undefined)).toBe(true);
+  });
+
+  it('reports a field written twice instead of keeping the first silently', () => {
+    const text = '## Q-1: a\n- **Status:** open\n- **Severity:** high\n- **Status:** answered\n';
+    const { diagnostics } = parseQuestions(text, 'q.md');
+    expect(diagnostics.map((d) => [d.code, d.message])).toEqual([['SPEC_PARSE', 'Q-1: Status is written twice']]);
+    expect(diagnostics[0]!.fix).toBeDefined();
+  });
+});
+
 describe('parseDecisions', () => {
   it('reads a change-local decision', () => {
     const { decisions, diagnostics } = parseDecisions(LOCAL_DECISIONS_MD, 'd.md');
@@ -64,6 +107,18 @@ describe('parseDecisions', () => {
   it('reads the canonical log', () => {
     const { decisions } = parseDecisions(DECISIONS_MD, 'comb/decisions.md');
     expect(decisions.map((d) => [d.id, d.change])).toEqual([['D-021', 'seed-orders']]);
+  });
+
+  it('reports a decision heading at the wrong level', () => {
+    const text = '# Decisions\n\n### D-1: x\n- **Date:** 2026-10-06\n\nrule\n';
+    const { decisions, diagnostics } = parseDecisions(text, 'd.md');
+    expect(decisions).toEqual([]);
+    expect(diagnostics.map((d) => [d.code, d.target?.line, d.fix])).toEqual([['SPEC_PARSE', 3, 'Use "## D-<n>: <rule title>"']]);
+  });
+
+  it('reports a decision field written twice', () => {
+    const text = '## D-1: x\n- **From:** Q-1\n- **From:** Q-2\n\nrule\n';
+    expect(parseDecisions(text, 'd.md').diagnostics.map((d) => d.message)).toEqual(['D-1: From is written twice']);
   });
 
   it('requires the rule text', () => {

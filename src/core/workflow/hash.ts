@@ -9,11 +9,21 @@ export function deltaHash(change: ChangeSnapshot): string {
   return `sha256:${short(parts.join('\n\u0000\n'))}`;
 }
 
+/**
+ * Per-part hashes that let a re-review find what changed: requirements by id, and the delta's sections and
+ * purpose as `<capability>#<Section heading>` / `<capability>#Purpose`.
+ */
 export function requirementHashes(change: ChangeSnapshot): Record<string, string> {
   const out: Record<string, string> = {};
   for (const d of change.deltas) {
     for (const r of [...d.delta.added, ...d.delta.modified]) out[r.id] = `sha256:${short(r.block.trim())}`;
     for (const x of d.delta.removed) out[x.id] = 'removed';
+    for (const s of [...d.delta.addedSections, ...d.delta.modifiedSections]) {
+      out[`${d.delta.capability}#${s.heading}`] = `sha256:${short(s.content.trim())}`;
+    }
+    if (d.delta.purpose !== null || d.delta.prefix !== null) {
+      out[`${d.delta.capability}#Purpose`] = `sha256:${short(`${d.delta.prefix ?? ''}\n${d.delta.purpose ?? ''}`)}`;
+    }
   }
   return out;
 }

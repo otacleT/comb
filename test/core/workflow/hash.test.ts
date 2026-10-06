@@ -32,6 +32,16 @@ describe('requirementHashes / changedSince', () => {
     expect(hashes['REQ-ORDER-003']).toMatch(/^sha256:/);
   });
 
+  it('also hashes sections and the purpose, so an edit outside requirement blocks is located', () => {
+    const withSection = `${DELTA}\n## MODIFIED Sections\n\n### Section: States\n| from | to |\n|---|---|\n| a | b |\n`;
+    const before = requirementHashes(changeWith(withSection));
+    expect(Object.keys(before)).toContain('order-lifecycle#States');
+    const after = requirementHashes(changeWith(withSection.replace('| a | b |', '| a | b |\n| b | c |')));
+    expect(changedSince(before, after)).toEqual(['order-lifecycle#States']);
+    const withPurpose = (p: string) => requirementHashes(changeWith(`## Purpose\n\n${p}\n\n${DELTA}`));
+    expect(changedSince(withPurpose('Orders.'), withPurpose('Orders and returns.'))).toEqual(['order-lifecycle#Purpose']);
+  });
+
   it('lists ids whose hash changed, appeared or disappeared', () => {
     expect(changedSince(null, { 'REQ-A-001': 'x' })).toBeNull();
     expect(changedSince({ 'REQ-A-001': 'x', 'REQ-A-002': 'y' }, { 'REQ-A-001': 'x', 'REQ-A-003': 'z' })).toEqual(['REQ-A-002', 'REQ-A-003']);

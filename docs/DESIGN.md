@@ -170,7 +170,7 @@ prefix: ORDER          # 新しい capability を作るときだけ必須
 ```markdown
 ---
 reviewed: sha256:…        # comb mark-reviewed が書く（delta の内容ハッシュ）
-requirements: { REQ-ORDER-019: "sha256:…" }   # comb mark-reviewed が書く（要件ごとのハッシュ。再レビューで変更箇所を特定する）
+requirements: { REQ-ORDER-019: "sha256:…", "order-lifecycle#States": "sha256:…" }   # comb mark-reviewed が書く（要件、節、Purpose ごとのハッシュ。再レビューで変更箇所を特定する）
 lenses: [consistency, formalization, edge-cases, change-impact]
 ---
 # Review: add-auto-cancel-unshipped

@@ -47,4 +47,14 @@ describe('claude-code adapter', () => {
     expect(clarify).toContain('comb instructions clarify');
     expect(clarify).toContain('never answer');
   });
+
+  it('limits the review and clarify validate loop to the change\'s own files', () => {
+    const files = claudeCode.files(TEMPLATES_DIR, '9.9.9');
+    for (const wf of ['review', 'clarify']) {
+      const skill = files.find((f) => f.path === `.claude/skills/comb-${wf}/SKILL.md`)!.content;
+      expect(skill).toContain('under `comb/changes/<id>/`');
+      expect(skill).toContain('report them to the user');
+      expect(skill).not.toContain('until `ok` is `true`');
+    }
+  });
 });

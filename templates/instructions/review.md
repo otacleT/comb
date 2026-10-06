@@ -1,7 +1,7 @@
 Review change "{{change}}". Write review.md at outputPath and the questions to {{questionsPath}}. Prose in {{language}}; headings, field names and keywords stay in English.
 
 1. Read every file in context.readFiles: the base specs, the project decisions, the proposal, the delta(s), and this change's existing questions and decisions.
-2. If context.changedSinceReview is a list, this is a re-review: focus on those requirements and everything they affect. Keep earlier findings that still apply, and never re-ask an answered question.
+2. If context.changedSinceReview is a list, this is a re-review: focus on the requirements, sections (`<capability>#<Section>`) and purposes (`<capability>#Purpose`) it names and everything they affect; if the list is empty, re-review the whole delta. Keep earlier findings that still apply, and never re-ask an answered question.
 3. Apply every lens in `lenses` (their full definitions are included). Record the findings per lens in review.md.
 4. Turn the findings into questions in {{questionsPath}}, following the template:
    - one question per root cause (merge findings that share a cause);
