@@ -38,6 +38,12 @@
 | 11 | Claude Code への導入（Skill・コマンド）と `comb init` |
 | 12 | 体験の確認（E1・E2）、README、体験ログ |
 
+### M1 の追加タスク（M2 の前に行う。体験確認で見つかったもの）
+
+| # | 内容 | 根拠 |
+|---|---|---|
+| F1 | `/comb:<wf>` のコマンドファイルの本文を、Skill に処理を渡す形ではなく、同じ Skill テンプレートから生成した手順そのものにする。あわせて、コマンドの frontmatter に `allowed-tools: Bash(comb:*)` を付ける。テンプレートの正本は1つのままにする | E1：コマンドから Skill を呼ぶと、Skill の実行許可が別に必要になる（[experience-log](experience-log.md)） |
+
 ## M2：Clarify loop（範囲と継ぎ目）
 
 **完了条件：**
