@@ -5,7 +5,8 @@ import { registerInstructions } from './commands/instructions.js';
 import { registerNewChange } from './commands/new-change.js';
 import { registerStatus } from './commands/status.js';
 import { registerValidate } from './commands/validate.js';
-import { EXIT } from './output.js';
+import { diag } from '../core/diagnostics.js';
+import { envelope, EXIT, render } from './output.js';
 
 export interface CliContext {
   cwd: string;
@@ -58,6 +59,11 @@ export async function runCli(argv: string[], cwd: string, opts: { today?: () => 
   } catch (e) {
     if (e instanceof CommanderError) {
       code = e.exitCode === 0 ? EXIT.OK : EXIT.USAGE;
+      // Agents parse stdout as JSON; keep that contract for argument errors too.
+      if (code === EXIT.USAGE && argv.includes('--json')) {
+        const message = e.message.replace(/^error:\s*/, '');
+        stdout += `${render(envelope(argv[0] ?? '', null, [diag('error', 'USAGE_ERROR', message)]), true, () => '')}\n`;
+      }
     } else {
       stderr += `${(e as Error).stack ?? String(e)}\n`;
       code = EXIT.INTERNAL;

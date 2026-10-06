@@ -429,6 +429,7 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | コード | 終了コード | 内容 |
 |---|---|---|
 | `NOT_A_COMB_PROJECT` | 2 | カレントディレクトリとその親に `comb/config.yaml` がない |
+| `USAGE_ERROR` | 2 | 引数やオプションが不正（`--json` を指定していれば、この場合も封筒を返す） |
 | `CHANGE_NOT_FOUND` / `UNKNOWN_ARTIFACT` / `UNKNOWN_AGENT` | 2 | 指定した change、成果物、エージェントが存在しない |
 | `CHANGE_ID_INVALID` / `CHANGE_EXISTS` | 1 | change ID が kebab-case でない、またはすでに存在する |
 | `CHANGE_META_INVALID` | 1 | `.comb.yaml` がない、または読めない |
