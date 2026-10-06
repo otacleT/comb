@@ -17,7 +17,7 @@
 | **M1** | Walking skeleton | **E1** 導入、**E2** 提案 | 解析、検査、`init` / `new change` / `validate` / `status` / `instructions(proposal, delta, tasks)`、explore / propose の Skill | [2026-10-06-m1-walking-skeleton.md](plans/2026-10-06-m1-walking-skeleton.md) |
 | **M2**（完了：2026-10-06。E3 は F2 で達成、E4 は D-019 の基準で達成） | Clarify loop | **E3** レビュー、**E4** 明確化 | Question / Decision、レビューの stale 判定と clarify のゲート、`instructions(review, clarify)`、4つのレビュー観点、review / clarify の Skill、E3 用のベンチマーク題材 | [2026-10-06-m2-clarify-loop.md](plans/2026-10-06-m2-clarify-loop.md) |
 | **M3**（完了：2026-10-06） | Archive | **E5** archive、**E6** 2回目の変更 | delta の適用（テキストの範囲の差し替え）、Decision の恒久ID、archive のトランザクション、ベースのハッシュ（S1）、`list` / `show`、`instructions(apply)`、apply / archive の Skill | [2026-10-06-m3-archive.md](plans/2026-10-06-m3-archive.md) |
-| **M4** | Should | — | ベンチマークの自動実行（S2）、`comb update`（S3）、パッケージ名の決定と公開の準備 | [2026-10-06-m4-should.md](plans/2026-10-06-m4-should.md) |
+| **M4**（完了：2026-10-06） | Should | — | ベンチマークの自動実行（S2）、`comb update`（S3）、パッケージ名の決定と公開の準備 | [2026-10-06-m4-should.md](plans/2026-10-06-m4-should.md) |
 
 ## M1：Walking skeleton（詳細計画あり）
 

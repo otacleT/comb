@@ -1,0 +1,145 @@
+{
+  "subject": "subscription-billing",
+  "keys": 10,
+  "recalls": [
+    9,
+    9
+  ],
+  "mean": 9,
+  "costUsd": 7.112722400000001,
+  "pass": 7,
+  "runs": [
+    {
+      "run": 1,
+      "workDir": "/var/folders/l0/_x1t3dvj69sf6lnqlq4l_pz00000gn/T/comb-bench-subscription-billing-xC8N1E/run-1",
+      "review": {
+        "turns": 19,
+        "costUsd": 3.089403000000001,
+        "minutes": 13.8,
+        "toolErrors": 2
+      },
+      "grade": {
+        "costUsd": 0.4778642,
+        "minutes": 0.3
+      },
+      "matches": [
+        {
+          "key": "SB-01",
+          "question": "Q-5",
+          "quote": "the user saves a new card, and the system charges it 980 yen at once... This charge has its own idempotency key... 1,960 yen is collected for one period"
+        },
+        {
+          "key": "SB-02",
+          "question": "Q-1",
+          "quote": "the user gets all 9,800 yen back and keeps 8,766 yen of credit, which is forfeited only on deletion"
+        },
+        {
+          "key": "SB-03",
+          "question": "Q-5",
+          "quote": "day-7 retry fails and the account moves to Free while a new-card charge is still in flight. That charge then succeeds"
+        },
+        {
+          "key": "SB-04",
+          "question": "Q-2",
+          "quote": "the billing page still offers a refund of the 980 yen charge, because REQ-SUB-013 limits refunds only by date... 1,960 yen leaves Notely"
+        },
+        {
+          "key": "SB-05",
+          "question": "Q-1",
+          "quote": "the user refunds the 980 yen charge... the subscription ends, and the 8,915 yen charge, which paid for a year, stays with Notely"
+        },
+        {
+          "key": "SB-06",
+          "question": "Q-6",
+          "quote": "two MUST statements contradict each other for switches and direct subscriptions... Nothing says what happens to the 3,960 yen"
+        },
+        {
+          "key": "SB-07",
+          "question": null,
+          "quote": ""
+        },
+        {
+          "key": "SB-08",
+          "question": "Q-3",
+          "quote": "implementers will differ on whether the first charge of a direct subscription is refundable. If it is, a user can subscribe and refund every 7 days"
+        },
+        {
+          "key": "SB-09",
+          "question": "Q-9",
+          "quote": "the second dispute closes in Notely's favor, so \"the billing hold SHALL be lifted\"... the hold is lifted without support"
+        },
+        {
+          "key": "SB-10",
+          "question": "Q-8",
+          "quote": "The user deletes account A... Account B is not \"an account on billing hold\"... the hold is bypassed"
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "workDir": "/var/folders/l0/_x1t3dvj69sf6lnqlq4l_pz00000gn/T/comb-bench-subscription-billing-xC8N1E/run-2",
+      "review": {
+        "turns": 12,
+        "costUsd": 3.051679,
+        "minutes": 13.7,
+        "toolErrors": 0
+      },
+      "grade": {
+        "costUsd": 0.4937762,
+        "minutes": 0.4
+      },
+      "matches": [
+        {
+          "key": "SB-01",
+          "question": "Q-3",
+          "quote": "No requirement makes a charge or a user action wait for, or re-check, an unresolved attempt on the same subscription."
+        },
+        {
+          "key": "SB-02",
+          "question": "Q-1",
+          "quote": "Notely has refunded all 9,800 yen it received and still owes the user 8,793 yen of credit"
+        },
+        {
+          "key": "SB-03",
+          "question": "Q-3",
+          "quote": "The API call times out, so the result is not yet known... The late success then charges a subscription the user has canceled."
+        },
+        {
+          "key": "SB-04",
+          "question": "Q-2",
+          "quote": "nothing excludes disputed charges or Free accounts, so 980 yen is refunded... a dispute on the refunded charge... puts a user who was already refunded on billing hold"
+        },
+        {
+          "key": "SB-05",
+          "question": null,
+          "quote": ""
+        },
+        {
+          "key": "SB-06",
+          "question": "Q-7",
+          "quote": "two requirements give two card amounts for the same switch. \"Credit\" also means two things"
+        },
+        {
+          "key": "SB-07",
+          "question": "Q-3",
+          "quote": "A webhook acknowledged with 2xx is lost during asynchronous processing (REQ-SUB-016). The next retry is then sent although the previous one succeeded."
+        },
+        {
+          "key": "SB-08",
+          "question": "Q-4",
+          "quote": "the first charge of a direct subscription is not in the list... a user gets Pro indefinitely at no cost"
+        },
+        {
+          "key": "SB-09",
+          "question": "Q-10",
+          "quote": "the first dispute closes in Notely's favor, and \"the billing hold SHALL be lifted\"... the two rules of REQ-SUB-014 disagree about the hold"
+        },
+        {
+          "key": "SB-10",
+          "question": "Q-9",
+          "quote": "card X gets a second trial... an account on billing hold can be deleted and a new account can subscribe with the same card"
+        }
+      ]
+    }
+  ]
+}

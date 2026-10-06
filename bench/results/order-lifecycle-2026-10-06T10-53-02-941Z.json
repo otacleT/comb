@@ -1,0 +1,115 @@
+{
+  "subject": "order-lifecycle",
+  "keys": 7,
+  "recalls": [
+    6,
+    5
+  ],
+  "mean": 5.5,
+  "costUsd": 8.4027776,
+  "pass": 5,
+  "runs": [
+    {
+      "run": 1,
+      "workDir": "/var/folders/l0/_x1t3dvj69sf6lnqlq4l_pz00000gn/T/comb-bench-order-lifecycle-PjN8nd/run-1",
+      "review": {
+        "turns": 12,
+        "costUsd": 3.6610728,
+        "minutes": 15.6,
+        "toolErrors": 0
+      },
+      "grade": {
+        "costUsd": 0.5623442,
+        "minutes": 0.2
+      },
+      "matches": [
+        {
+          "key": "BL-01",
+          "question": "Q-1",
+          "quote": "The second confirmation arrives... It is a late payment, so it is refunded in full... retained_amount = ¥0, and the seller is credited nothing"
+        },
+        {
+          "key": "BL-02",
+          "question": "Q-1",
+          "quote": "A konbini payment that arrives after payment_expired meets a captured_amount of 0. REQ-ORDER-016 says \"no refund is issued...\""
+        },
+        {
+          "key": "BL-03",
+          "question": "Q-5",
+          "quote": "The proceeds are not yet \"paid out\"... So T20 is allowed... Proceeds frozen by a chargeback... By the literal definition they are paid out"
+        },
+        {
+          "key": "BL-04",
+          "question": "Q-6",
+          "quote": "The order is cancelled, so the chargeback \"is recorded and queued to CS with no state change\"... buyer receives ¥5,000 from the card network and another 5,000 points"
+        },
+        {
+          "key": "BL-05",
+          "question": null,
+          "quote": ""
+        },
+        {
+          "key": "BL-06",
+          "question": "Q-7",
+          "quote": "An Admin finds fraud and force-cancels... buyer gets ¥10,000 from the card network and another ¥10,000 from Kurumi"
+        },
+        {
+          "key": "BL-07",
+          "question": "Q-3",
+          "quote": "REQ-ORDER-001 requires it to \"re-check the order's current status and hold state\"... both checks pass. The job completes the order (T11)"
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "workDir": "/var/folders/l0/_x1t3dvj69sf6lnqlq4l_pz00000gn/T/comb-bench-order-lifecycle-PjN8nd/run-2",
+      "review": {
+        "turns": 11,
+        "costUsd": 3.5499044000000004,
+        "minutes": 16.5,
+        "toolErrors": 0
+      },
+      "grade": {
+        "costUsd": 0.6294561999999999,
+        "minutes": 0.9
+      },
+      "matches": [
+        {
+          "key": "BL-01",
+          "question": "Q-2",
+          "quote": "if the late payment is not part of captured_amount, its ¥10,000 refund already uses the whole REQ-ORDER-016 cap ... seller is credited nothing"
+        },
+        {
+          "key": "BL-02",
+          "question": "Q-2",
+          "quote": "an order cancelled with payment_expired has captured_amount = 0, and REQ-ORDER-016 ... forbids the refund that the REQ-ORDER-004 scenario requires"
+        },
+        {
+          "key": "BL-03",
+          "question": "Q-3",
+          "quote": "Its proceeds are not yet \"paid out\", because that needs a payout that \"has succeeded\". So T20 is allowed"
+        },
+        {
+          "key": "BL-04",
+          "question": "Q-9",
+          "quote": "does not say whether chargeback becomes open, whether won or lost can be recorded, or whether REQ-ORDER-016's deferral applies"
+        },
+        {
+          "key": "BL-05",
+          "question": null,
+          "quote": ""
+        },
+        {
+          "key": "BL-06",
+          "question": null,
+          "quote": ""
+        },
+        {
+          "key": "BL-07",
+          "question": "Q-10",
+          "quote": "The job runs and re-checks only \"the order's current status and hold state\"... A job that does not re-check its deadline also acts on a stale deadline"
+        }
+      ]
+    }
+  ]
+}
