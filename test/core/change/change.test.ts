@@ -43,8 +43,30 @@ describe('validation across a project', () => {
       'comb/specs/order-lifecycle/spec.md': ORDER_SPEC,
       'comb/specs/other/spec.md': ORDER_SPEC,
     });
-    // `other` repeats both requirements of order-lifecycle, so each id is reported once on the second spec.
-    expect(validateProject(loadProject(root)).map((d) => d.code)).toEqual(['REQ_ID_DUPLICATE', 'REQ_ID_DUPLICATE']);
+    // `other` repeats both requirements of order-lifecycle (each id reported once on the second spec)
+    // and shares its prefix (reported once).
+    expect(validateProject(loadProject(root)).map((d) => d.code)).toEqual(['REQ_ID_DUPLICATE', 'REQ_ID_DUPLICATE', 'REQ_ID_PREFIX']);
+  });
+
+  it('rejects a new capability that reuses another capability\'s prefix or requirement ids', () => {
+    const root = makeProject({
+      'comb/config.yaml': CONFIG_YAML,
+      'comb/specs/order-lifecycle/spec.md': ORDER_SPEC,
+      'comb/changes/c/.comb.yaml': metaYaml('c'),
+      'comb/changes/c/specs/order-refunds/spec.md': `---\nprefix: ORDER\n---\n## Purpose\np\n\n${addDelta('REQ-ORDER-001')}`,
+    });
+    const all = loadAllChanges(root);
+    expect(validateChange(loadProject(root), all[0]!, all).map((d) => d.code).sort()).toEqual(['REQ_ID_DUPLICATE', 'REQ_ID_PREFIX']);
+  });
+
+  it('rejects two canonical specs that share a prefix', () => {
+    const refunds = ORDER_SPEC.replace(/REQ-ORDER-001/g, 'REQ-ORDER-021').replace(/REQ-ORDER-002/g, 'REQ-ORDER-022');
+    const root = makeProject({
+      'comb/config.yaml': CONFIG_YAML,
+      'comb/specs/order-lifecycle/spec.md': ORDER_SPEC,
+      'comb/specs/order-refunds/spec.md': refunds,
+    });
+    expect(validateProject(loadProject(root)).map((d) => d.code)).toEqual(['REQ_ID_PREFIX']);
   });
 
   it('validates deltas against the base and other changes', () => {

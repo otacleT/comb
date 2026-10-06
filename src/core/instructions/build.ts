@@ -16,28 +16,37 @@ export interface Instructions {
   rules: string[];
   language: string;
   context: { project: string; capabilities: string[]; readFiles: string[] };
-  ids: { nextRequirement: Record<string, string> };
+  ids: { nextRequirement: Record<string, string>; prefixesInUse: string[] };
 }
 
 const fill = (t: string, vars: Record<string, string>): string =>
   t.replace(/\{\{(\w+)\}\}/g, (m: string, k: string) => vars[k] ?? m);
 
 export function nextRequirementIds(project: Project, changes: ChangeSnapshot[]): Record<string, string> {
-  const inFlight = changes.flatMap((c) => c.deltas.flatMap((d) => d.delta.added.map((r) => r.id)));
+  // Ids are unique project-wide, so every capability counts against every id in use.
+  const used = [
+    ...[...project.specs.values()].flatMap((s) => [...s.capability.requirements.map((r) => r.id), ...s.capability.retired]),
+    ...changes.flatMap((c) => c.deltas.flatMap((d) => d.delta.added.map((r) => r.id))),
+  ];
   const out: Record<string, string> = {};
   for (const spec of project.specs.values()) {
-    const prefix = spec.capability.prefix;
-    if (!prefix) continue;
-    const used = [...spec.capability.requirements.map((r) => r.id), ...spec.capability.retired, ...inFlight];
-    out[spec.name] = nextRequirementId(prefix, used);
+    if (spec.capability.prefix) out[spec.name] = nextRequirementId(spec.capability.prefix, used);
   }
   for (const c of changes) {
     for (const d of c.deltas) {
       if (project.specs.has(d.capability) || !d.delta.prefix || out[d.capability] !== undefined) continue;
-      out[d.capability] = nextRequirementId(d.delta.prefix, inFlight);
+      out[d.capability] = nextRequirementId(d.delta.prefix, used);
     }
   }
   return out;
+}
+
+export function prefixesInUse(project: Project, changes: ChangeSnapshot[]): string[] {
+  const prefixes = [
+    ...[...project.specs.values()].map((s) => s.capability.prefix),
+    ...changes.flatMap((c) => c.deltas.filter((d) => !project.specs.has(d.capability)).map((d) => d.delta.prefix)),
+  ];
+  return [...new Set(prefixes.filter((p): p is string => p !== null))].sort();
 }
 
 export function buildInstructions(
@@ -72,6 +81,6 @@ export function buildInstructions(
     rules: project.config.rules[artifact] ?? [],
     language: project.config.language,
     context: { project: project.config.context, capabilities: [...project.specs.keys()], readFiles },
-    ids: { nextRequirement: nextRequirementIds(project, all) },
+    ids: { nextRequirement: nextRequirementIds(project, all), prefixesInUse: prefixesInUse(project, all) },
   };
 }

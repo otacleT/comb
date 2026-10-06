@@ -28,6 +28,18 @@ describe('nextRequirementIds', () => {
   });
 });
 
+describe('nextRequirementIds across capabilities', () => {
+  it('never hands out an id that exists in another capability with the same prefix', () => {
+    const refunds = ORDER_SPEC.replace(/REQ-ORDER-001/g, 'REQ-ORDER-021').replace(/REQ-ORDER-002/g, 'REQ-ORDER-022');
+    const root = makeProject({
+      'comb/config.yaml': CONFIG_YAML,
+      'comb/specs/order-lifecycle/spec.md': ORDER_SPEC,
+      'comb/specs/order-refunds/spec.md': refunds,
+    });
+    expect(nextRequirementIds(loadProject(root), [])).toEqual({ 'order-lifecycle': 'REQ-ORDER-023', 'order-refunds': 'REQ-ORDER-023' });
+  });
+});
+
 describe('buildInstructions', () => {
   it('builds delta instructions with files to read, rules and ids', () => {
     const { project, all } = setup();
@@ -44,6 +56,7 @@ describe('buildInstructions', () => {
     expect(ins.instruction).not.toContain('{{');
     expect(ins.template).toContain('## ADDED Requirements');
     expect(ins.ids.nextRequirement['order-lifecycle']).toBe('REQ-ORDER-012');
+    expect(ins.ids.prefixesInUse).toEqual(['ORDER', 'PAY']);
   });
 
   it('builds proposal and tasks instructions with their output paths', () => {

@@ -3,7 +3,8 @@ Write the spec delta(s) for change "{{change}}". Prose in {{language}}; structur
 1. Read every file in context.readFiles, including proposal.md.
 2. Write one delta per affected capability at comb/changes/{{change}}/specs/<capability>/spec.md (outputPath shows the pattern).
 3. Address requirements by id:
-   - ADDED: take ids from ids.nextRequirement for that capability and count up from there. For a NEW capability, choose a prefix (default: the first word of the capability name in upper case), put "prefix: <PREFIX>" in the frontmatter, add "## Purpose", and start at 001.
+   - Requirement ids are unique across the whole project.
+   - ADDED: take ids from ids.nextRequirement for that capability and count up from there. For a NEW capability, choose a prefix that is NOT in ids.prefixesInUse (default: the first word of the capability name in upper case, if it is free), put "prefix: <PREFIX>" in the frontmatter, add "## Purpose", and start at 001.
    - MODIFIED: copy the WHOLE current requirement block from comb/specs/, then edit it. Keep every scenario that still applies; a dropped scenario is reported.
    - REMOVED: "### Requirement: <id>" followed by "**Reason:**" (and "**Migration:**" when users or data are affected).
 4. Every ADDED or MODIFIED requirement needs at least one "#### Scenario:" written as "- **GIVEN** / **WHEN** / **THEN** / **AND**" bullets with concrete values.
