@@ -7,8 +7,8 @@ import { nextRequirementId } from '../spec/ids.js';
 import { changedSince, requirementHashes } from '../workflow/hash.js';
 import { readReviewStamp } from '../workflow/review-stamp.js';
 
-export type InstructionArtifact = 'proposal' | 'delta' | 'tasks' | 'review' | 'clarify';
-export const INSTRUCTION_ARTIFACTS: readonly InstructionArtifact[] = ['proposal', 'delta', 'tasks', 'review', 'clarify'];
+export type InstructionArtifact = 'proposal' | 'delta' | 'tasks' | 'review' | 'clarify' | 'apply';
+export const INSTRUCTION_ARTIFACTS: readonly InstructionArtifact[] = ['proposal', 'delta', 'tasks', 'review', 'clarify', 'apply'];
 
 export interface QuestionSummary {
   id: string;
@@ -105,18 +105,25 @@ export function buildInstructions(
     tasks: [...proposal, ...deltas],
     review: [...specFiles, ...projectDecisions, ...proposal, ...deltas, ...ownQuestionsAndDecisions],
     clarify: [...ownQuestionsAndDecisions, ...deltas, ...touchedSpecs, ...projectDecisions],
+    apply: [...proposal, ...deltas, ...(has('tasks') ? [changeFile('tasks')] : []), ...ownQuestionsAndDecisions, ...touchedSpecs, ...projectDecisions],
   };
   const deltaPattern = `comb/changes/${change.id}/specs/<capability>/spec.md`;
-  const outputPath = artifact === 'delta' ? deltaPattern : changeFile(artifact === 'clarify' ? 'decisions' : artifact);
+  const outputName: Record<InstructionArtifact, ChangeFileName | null> = {
+    proposal: 'proposal', delta: null, tasks: 'tasks', review: 'review', clarify: 'decisions', apply: 'tasks',
+  };
+  const outputFile = outputName[artifact];
+  const outputPath = outputFile === null ? deltaPattern : changeFile(outputFile);
   const alsoWrite =
     artifact === 'review' ? [changeFile('questions')] : artifact === 'clarify' ? [changeFile('questions'), deltaPattern] : [];
-  const formats = artifact === 'review' ? ['review', 'questions'] : artifact === 'clarify' ? ['decisions', 'questions'] : [artifact];
+  const formats =
+    artifact === 'review' ? ['review', 'questions'] : artifact === 'clarify' ? ['decisions', 'questions'] : artifact === 'apply' ? ['tasks'] : [artifact];
   const read = (dir: string, name: string): string => readFileSync(join(templatesDir, dir, `${name}.md`), 'utf8');
   const vars = {
     change: change.id,
     language: project.config.language,
     questionsPath: changeFile('questions'),
     decisionsPath: changeFile('decisions'),
+    tasksPath: changeFile('tasks'),
   };
   const questions = parseQuestions(change.files.questions ?? '', 'questions.md').questions;
   const decisions = parseDecisions(change.files.decisions ?? '', 'decisions.md').decisions;

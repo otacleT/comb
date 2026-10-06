@@ -5,12 +5,16 @@ import { TEMPLATES_DIR } from '../../src/templates-dir.js';
 
 describe('claude-code adapter', () => {
   it('lists workflows from templates/skills', () => {
-    expect(listWorkflows(TEMPLATES_DIR)).toEqual(['clarify', 'explore', 'propose', 'review']);
+    expect(listWorkflows(TEMPLATES_DIR)).toEqual(['apply', 'archive', 'clarify', 'explore', 'propose', 'review']);
   });
 
   it('generates a skill and a slash command per workflow', () => {
     const files = claudeCode.files(TEMPLATES_DIR, '9.9.9');
     expect(files.map((f) => f.path)).toEqual([
+      '.claude/skills/comb-apply/SKILL.md',
+      '.claude/commands/comb/apply.md',
+      '.claude/skills/comb-archive/SKILL.md',
+      '.claude/commands/comb/archive.md',
       '.claude/skills/comb-clarify/SKILL.md',
       '.claude/commands/comb/clarify.md',
       '.claude/skills/comb-explore/SKILL.md',
@@ -20,14 +24,14 @@ describe('claude-code adapter', () => {
       '.claude/skills/comb-review/SKILL.md',
       '.claude/commands/comb/review.md',
     ]);
-    const skill = files[4]!.content;
+    const skill = files.find((f) => f.path === '.claude/skills/comb-propose/SKILL.md')!.content;
     const fm = splitFrontmatter(skill);
     expect(fm.error).toBeNull();
     expect(fm.data).toMatchObject({ name: 'comb-propose', 'allowed-tools': 'Bash(comb:*)' });
     expect(String((fm.data.metadata as { generatedBy: string }).generatedBy)).toMatch(/^comb@9\.9\.9 sha256:[0-9a-f]{16}$/);
     expect(String(fm.data.description)).toContain('Comb change');
     expect(skill).toContain('comb instructions proposal');
-    const command = files[5]!.content;
+    const command = files.find((f) => f.path === '.claude/commands/comb/propose.md')!.content;
     const commandFm = splitFrontmatter(command);
     expect(commandFm.error).toBeNull();
     expect(commandFm.data).toMatchObject({ 'allowed-tools': 'Bash(comb:*)' });
@@ -56,5 +60,14 @@ describe('claude-code adapter', () => {
       expect(skill).toContain('report them to the user');
       expect(skill).not.toContain('until `ok` is `true`');
     }
+  });
+
+  it('generates apply and archive commands that drive the CLI', () => {
+    const files = claudeCode.files(TEMPLATES_DIR, '9.9.9');
+    const apply = files.find((f) => f.path === '.claude/commands/comb/apply.md')!.content;
+    expect(apply).toContain('comb instructions apply');
+    const archive = files.find((f) => f.path === '.claude/commands/comb/archive.md')!.content;
+    expect(archive).toContain('comb archive <id> --json');
+    expect(archive).toContain('only when the user explicitly agrees');
   });
 });
