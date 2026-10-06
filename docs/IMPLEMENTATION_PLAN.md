@@ -15,7 +15,7 @@
 | # | 名前 | 完了条件（体験） | 主な成果 | 詳細計画 |
 |---|---|---|---|---|
 | **M1** | Walking skeleton | **E1** 導入、**E2** 提案 | 解析、検査、`init` / `new change` / `validate` / `status` / `instructions(proposal, delta, tasks)`、explore / propose の Skill | [2026-10-06-m1-walking-skeleton.md](plans/2026-10-06-m1-walking-skeleton.md) |
-| **M2**（実装完了：2026-10-06。E3 は F2 で達成。E4 は仕組みは成立、収束は未達で基準を見直し中） | Clarify loop | **E3** レビュー、**E4** 明確化 | Question / Decision、レビューの stale 判定と clarify のゲート、`instructions(review, clarify)`、4つのレビュー観点、review / clarify の Skill、E3 用のベンチマーク題材 | [2026-10-06-m2-clarify-loop.md](plans/2026-10-06-m2-clarify-loop.md) |
+| **M2**（完了：2026-10-06。E3 は F2 で達成、E4 は D-019 の基準で達成） | Clarify loop | **E3** レビュー、**E4** 明確化 | Question / Decision、レビューの stale 判定と clarify のゲート、`instructions(review, clarify)`、4つのレビュー観点、review / clarify の Skill、E3 用のベンチマーク題材 | [2026-10-06-m2-clarify-loop.md](plans/2026-10-06-m2-clarify-loop.md) |
 | **M3** | Archive | **E5** archive、**E6** 2回目の変更 | delta の適用（テキストの範囲の差し替え）、Decision の恒久ID、archive のトランザクション、ベースのハッシュ（S1）、`list` / `show`、`instructions(apply)`、apply / archive の Skill | M2 の体験確認の後に作成 |
 | **M4** | Should | — | ベンチマークの自動実行（S2）、`comb update`（S3）、パッケージ名の決定と公開の準備 | M3 の後に作成 |
 
@@ -48,7 +48,7 @@
 
 **完了条件：**
 - **E3**：`/comb:review` が、選択肢と推奨の付いた質問を出す。ベンチマークの題材で、ベースラインの high 7件のうち5件以上を再現する。
-- **E4**：回答すると Decision が作られ、delta が更新される。review が stale になり、再レビューの後、high の未決が0件になると、next が tasks か apply に進む。
+- **E4**：回答すると Decision が作られ、delta が更新される。review が stale になり、再レビューのたびに high の未決が減る。ユーザーが残りを回答するか保留にすると、next が tasks か apply に進む（D-019 で見直した基準）。
 
 | Task | 内容 | 主なインターフェース（M1 への追加・変更） |
 |---|---|---|

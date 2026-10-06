@@ -56,7 +56,7 @@ v0 の目的は1つ。
 | E1 | 導入 | 空のリポジトリで `comb init` を実行すると、Claude Code に `/comb:*` が現れる |
 | E2 | 提案 | 対話から `/comb:propose` で change を作ると、`comb validate` が通る。要件には安定IDが付く |
 | E3 | レビュー | `/comb:review` が、選択肢と推奨の付いた質問を出す。ベンチマークの仕様では、ベースラインの high 7件のうち5件以上を再現する |
-| E4 | 明確化 | 質問に答えると、Decision が作られ、delta が更新される。`comb status` は再レビューを促し、未決 high が0件になると「apply 可能」になる |
+| E4 | 明確化 | 質問に答えると、Decision が作られ、delta が更新される。`comb status` は再レビューを促す。再レビューを重ねると未決 high が減り、ユーザーが残りを回答するか保留（deferred）にすると「apply 可能」になる。ループを閉じるのはユーザーの判断で、high が自然に0件になることは求めない（D-019） |
 | E5 | archive | 正本へのマージが決定的で冪等である。Decision に恒久IDが付き、参照も書き換わる。正本との衝突は検出される |
 | E6 | 2回目の変更 | 同じ capability への次の change で、レビューが過去の Decision と仕様全体を踏まえて影響を指摘する |
 
