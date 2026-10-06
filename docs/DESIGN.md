@@ -326,9 +326,9 @@ proposal → delta → review → clarify → tasks → apply → archive
 - **next**：上の順で最初に done でない成果物。ただし、review が stale なら review を優先する。
 - **archive の条件**：
   - `validate` に error がない。
-  - review が stale でない。
+  - review が stale でない。`review.md` がない場合は `--yes` が必要。
   - open な質問が0件（すべて answered か deferred）。
-  - タスクが未完了なら警告し、`--yes` が必要。
+  - タスクが未完了（`tasks.md` がない場合を含む）なら、`--yes` が必要。
   - `SCENARIO_DROPPED` と `BASE_DRIFT` がある場合は、それぞれ明示的なフラグが必要。
 
 ### 5.2 各ワークフロー
@@ -347,7 +347,7 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 ### 5.3 archive のアルゴリズム（`comb archive <id>`、決定的）
 
 1. `validate` を実行し、archive の条件（5.1）を確認する。満たさなければ中止する（何も書かない）。
-2. change ローカルの Decision（D-1…）に、正本の連番の続きとして恒久ID（D-NNN）を割り当てる。対応表は `ローカルID → 恒久ID`。
+2. change ローカルの Decision（D-1…）に、正本の連番の続きとして恒久ID（D-NNN）を割り当てる。対応表は `ローカルID → 恒久ID`。change ローカルの ID と同じ文字列の ID が正本にあると、参照を書き換えられないので中止する（`DECISION_ID_CONFLICT`）。
 3. change 内のファイル（delta、questions、decisions）に出てくる `D-n` を、対応表で書き換える（作業用のコピー上で行う）。
 4. capability ごとに delta を正本へ適用する。
    - 順序：REMOVED → MODIFIED → ADDED → MODIFIED Sections → ADDED Sections。
@@ -438,6 +438,8 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | `CHANGE_META_INVALID` | 1 | `.comb.yaml` がない、または読めない |
 | `CONFIG_INVALID` | 1 | `config.yaml` の型や値が不正（context が 16KB を超える場合を含む） |
 | `DELTA_EMPTY` | 1 | delta に変更が1つもない |
+| `ARCHIVE_BLOCKED` | 1 | archive の条件（5.1）を満たしていない。満たしていない条件ごとに1件出し、fix に解消の方法やフラグを書く |
+| `DECISION_ID_CONFLICT` | 1 | change ローカルの Decision ID と同じ文字列の ID が正本にある、または Supersedes の対象がすでに別の Decision に置き換えられている |
 
 `instructions` の `data` は次の形。
 
