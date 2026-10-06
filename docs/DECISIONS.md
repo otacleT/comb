@@ -117,3 +117,10 @@ v0 では「検証済み」を名乗らない。将来導入するときは、�
 - **Refs:** V0_SCOPE（Non-goal）
 
 **Why:** Converge では、ツールの説明文が長すぎて Claude Code に切り詰められた。OpenSpec は CLI＋Skill で十分に機能している。
+
+## D-017: 動作環境の下限を Node 22.12 にする
+- **Date:** 2026-10-06
+- **Refs:** DESIGN 7.3, package.json `engines`
+- **Supersedes:** D-009（Node のバージョンの部分のみ）
+
+**Why:** 採用した commander 15 が Node 22.12 以上を要求するため。Node 20 は 2026-04 に EOL を迎えている。`test/package.test.ts` で、依存ライブラリが要求する下限と食い違っていないかを検査する。

@@ -475,7 +475,7 @@ bench/                 # S2：レビューの再現率を測るベンチマー�
 ```
 
 - 依存は最小限にする：commander、yaml、mdast-util-from-markdown、mdast-util-to-string（remark のパーサの中核）。テストは vitest。config の検証は手書きで行う（zod は必要になるまで入れない）。
-- Node 20 以上。npm で配布する。パッケージ名は未決で、コマンド名は `comb`（npm の `comb` は使用済み。候補は `@otaclet/comb`）。
+- Node 22.12 以上（D-017）。npm で配布する。パッケージ名は未決で、コマンド名は `comb`（npm の `comb` は使用済み。候補は `@otaclet/comb`）。
 - `core/` の関数は、ファイル入出力を持たない純粋関数を基本にする。入出力は `project/` と `change/` の archive トランザクションに閉じ込める。
 - テレメトリはなし。
 
