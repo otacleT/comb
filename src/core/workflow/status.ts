@@ -97,7 +97,8 @@ export function computeStatus(change: ChangeSnapshot, validation: Diagnostic[]):
         ? { id: 'apply', state: 'done' }
         : { id: 'apply', state: 'in-progress', detail: `${tasks.done}/${tasks.total}` };
   const artifacts = [proposal, delta, review, clarify, taskFile, apply];
-  const next = artifacts.find((a) => a.state !== 'done')?.id ?? 'archive';
+  // Archive needs every question answered or deferred (DESIGN §5.1), so open medium/low questions send the user back to clarify.
+  const next = artifacts.find((a) => a.state !== 'done')?.id ?? (counts.open > 0 ? 'clarify' : 'archive');
   const baseDrift = validation.filter((d) => d.code === 'BASE_DRIFT').map((d) => d.target?.id ?? '');
   return { change: change.id, artifacts, next, tasks, questions: counts, baseDrift };
 }

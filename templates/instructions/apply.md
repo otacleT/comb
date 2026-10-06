@@ -5,4 +5,4 @@ Implement change "{{change}}" by working through {{tasksPath}} in order. Write t
 3. Work through the tasks in order. When a task is done, including its tests, change its "- [ ]" to "- [x]" in {{tasksPath}}. Never tick a task you did not finish.
 4. Implement what the delta says. When the code needs behavior the delta does not specify, or contradicts it, stop and tell the user: the gap becomes a question for /comb:review or /comb:clarify, not a silent choice in code.
 5. Never edit the delta, comb/specs/ or comb/decisions.md while implementing.
-6. When every task is ticked, run `comb status --change {{change}}` and suggest /comb:archive.
+6. When every task is ticked, run `comb status --change {{change}}` and suggest the next step it reports (/comb:archive, or /comb:clarify while questions are still open).

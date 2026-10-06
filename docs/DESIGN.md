@@ -324,7 +324,7 @@ proposal → delta → review → clarify → tasks → apply → archive
 | archive | 下記の archive 条件を満たす | — |
 
 - **delta のハッシュ**：change の `specs/**/spec.md` を、パス順に連結して正規化した内容の sha256。
-- **next**：上の順で最初に done でない成果物。ただし、review が stale なら review を優先する。
+- **next**：上の順で最初に done でない成果物。ただし、review が stale なら review を優先する。すべて done でも open な質問が残っていれば clarify（archive の条件を満たさないため）。
 - **archive の条件**：
   - `validate` に error がない。
   - review が stale でない。`review.md` がない場合は `--yes` が必要。

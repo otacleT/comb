@@ -67,4 +67,11 @@ describe('parseDelta', () => {
       ['SPEC_PARSE', 9],
     ]);
   });
+
+  it('reports a block that ends inside an unclosed code fence', () => {
+    const text = '## MODIFIED Requirements\n\n### Requirement: REQ-ORDER-001 x\nbody\n\n#### Scenario: s\n- **GIVEN** a\n\n```md\n### Requirement: REQ-ORDER-999 example\n';
+    expect(parseDelta(text, 'order-lifecycle', 'd.md').diagnostics.map((d) => [d.code, d.target?.line])).toEqual([['SPEC_PARSE', 3]]);
+    const section = '## ADDED Sections\n\n### Section: Examples\n```md\n## Requirements\n';
+    expect(parseDelta(section, 'order-lifecycle', 'd.md').diagnostics.map((d) => [d.code, d.target?.line])).toEqual([['SPEC_PARSE', 3]]);
+  });
 });

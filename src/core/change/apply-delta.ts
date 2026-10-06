@@ -1,6 +1,6 @@
 import { isSeq, parseDocument } from 'yaml';
 import { diag, type Diagnostic } from '../diagnostics.js';
-import { headingBlocks, type HeadingBlock } from '../markdown/blocks.js';
+import { endsOpen, headingBlocks, type HeadingBlock } from '../markdown/blocks.js';
 import { splitFrontmatter } from '../markdown/frontmatter.js';
 import type { Capability, Delta, Section } from '../spec/model.js';
 import { parseSpec } from '../spec/parse-spec.js';
@@ -140,4 +140,33 @@ export function applyDelta(baseText: string | null, delta: Delta, file: string):
   for (const s of addedSections) setSection(s.heading, s.content, 'add');
 
   return { text: text.replace(/\n*$/, '\n'), skipped, diagnostics };
+}
+
+const sameSet = (actual: string[], expected: Set<string>): boolean => {
+  const got = new Set(actual);
+  return got.size === expected.size && [...got].every((x) => expected.has(x));
+};
+
+/**
+ * The merged spec must have exactly the base's requirements minus REMOVED plus ADDED, and the base's sections plus the
+ * added ones. Anything else means text was hidden (an unclosed fence or comment) or lost, so the merge must not be written.
+ */
+export function checkMerged(baseText: string | null, delta: Delta, mergedText: string, file: string): Diagnostic[] {
+  const base = baseText === null ? null : parseSpec(baseText, delta.capability, file).capability;
+  const removed = new Set(delta.removed.map((x) => x.id));
+  const expectedIds = new Set([...(base?.requirements ?? []).map((r) => r.id).filter((id) => !removed.has(id)), ...delta.added.map((r) => r.id)]);
+  const expectedSections = new Set([
+    ...(base?.sections ?? []).map((s) => s.heading),
+    ...delta.addedSections.map((s) => s.heading).filter((h) => !RESERVED_SECTIONS.has(h)),
+    ...(delta.purpose !== null || base === null ? ['Purpose'] : []),
+  ]);
+  const merged = parseSpec(mergedText, delta.capability, file).capability;
+  const ids = merged.requirements.map((r) => r.id);
+  const sections = merged.sections.map((s) => s.heading);
+  if (sameSet(ids, expectedIds) && sameSet(sections, expectedSections) && !endsOpen(mergedText)) return [];
+  return [
+    diag('error', 'SPEC_PARSE',
+      `merging would leave ${delta.capability} with requirements [${ids.join(', ')}] and sections [${sections.join(', ')}] instead of [${[...expectedIds].join(', ')}] and [${[...expectedSections].join(', ')}]`,
+      { file }, 'Look for a code fence (```) or HTML comment that is never closed, in the delta or in the spec'),
+  ];
 }

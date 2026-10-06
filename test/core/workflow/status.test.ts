@@ -5,6 +5,8 @@ import { parseDelta } from '../../../src/core/spec/parse-delta.js';
 import { computeStatus, countTasks, proposalComplete } from '../../../src/core/workflow/status.js';
 import { deltaHash } from '../../../src/core/workflow/hash.js';
 import { stampReview } from '../../../src/core/workflow/review-stamp.js';
+import { loadChange } from '../../../src/core/project/load.js';
+import { readyProject, TIGHTEN_QUESTIONS } from '../../helpers/archive.js';
 
 const PROPOSAL = '# Change: x\n\n## Why\nw\n\n## What Changes\n- a\n\n## Impact\n- b\n';
 
@@ -87,4 +89,13 @@ it('lists requirements with base drift', () => {
   const s = computeStatus(snapshot({}), [diag('warning', 'BASE_DRIFT', 'moved', { id: 'REQ-ORDER-002' })]);
   expect(s.baseDrift).toEqual(['REQ-ORDER-002']);
   expect(computeStatus(snapshot({}), []).baseDrift).toEqual([]);
+});
+
+it('points to clarify, not archive, while any question is still open', () => {
+  const root = readyProject({
+    'comb/changes/tighten-payment/questions.md': `${TIGHTEN_QUESTIONS}\n## Q-2: Later?\n- **Status:** open\n- **Severity:** medium\n`,
+  });
+  const s = computeStatus(loadChange(root, 'tighten-payment')!, []);
+  expect(s.artifacts.every((a) => a.state === 'done')).toBe(true);
+  expect(s.next).toBe('clarify');
 });

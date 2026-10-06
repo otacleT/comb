@@ -29,6 +29,12 @@ export function headingBlocks(text: string, from = 0): HeadingBlock[] {
   return blocks;
 }
 
+/** True when `text` ends inside an unclosed code fence or HTML block, which would swallow whatever follows it. */
+export function endsOpen(text: string): boolean {
+  const probe = 'comb-probe-heading';
+  return headingBlocks(`${text.replace(/\n*$/, '')}\n\n## ${probe}\n`).at(-1)?.text !== probe;
+}
+
 export function childBlocks(blocks: HeadingBlock[], parent: HeadingBlock, depth: number): HeadingBlock[] {
   return blocks.filter((b) => b.depth === depth && b.start >= parent.contentStart && b.start < parent.end);
 }

@@ -17,8 +17,15 @@ const canonicalDecisionIds = (project: Project): { ids: Set<string>; decisions: 
 /** Conflicts that would stop `comb archive` (DESIGN §5.3), reported while the change is still being worked on. */
 function decisionConflicts(local: Decision[], canonical: Decision[], file: string): Diagnostic[] {
   const out: Diagnostic[] = [];
+  const supersededHere = new Map<string, string>();
   for (const d of local) {
     const t = { file, line: d.line, id: d.id };
+    if (d.supersedes) {
+      const earlier = supersededHere.get(d.supersedes);
+      if (earlier) {
+        out.push(diag('error', 'DECISION_ID_CONFLICT', `${d.id} and ${earlier} both supersede ${d.supersedes}`, t, `Let only one decision supersede ${d.supersedes}`));
+      } else supersededHere.set(d.supersedes, d.id);
+    }
     if (canonical.some((c) => c.id === d.id)) {
       out.push(diag('error', 'DECISION_ID_CONFLICT', `${d.id} is also a decision in ${CANONICAL_DECISIONS_FILE}, so references to it are ambiguous`, t,
         'Renumber the local decision and its references'));
@@ -96,6 +103,8 @@ export function validateChange(project: Project, change: ChangeSnapshot, all: Ch
         out.push(diag('error', 'REQ_ID_PREFIX', `prefix ${d.delta.prefix} is already used by ${owner}`, { file: d.file, line: 1 },
           'Choose a prefix that is not in ids.prefixesInUse'));
       }
+      // A second new capability in this same change must not take the prefix either.
+      if (owner === undefined) prefixOwner.set(d.delta.prefix, d.capability);
     }
     for (const r of d.delta.added) {
       const t = { file: d.file, line: r.line, id: r.id };

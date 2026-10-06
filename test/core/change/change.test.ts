@@ -90,6 +90,21 @@ describe('validation across a project', () => {
   });
 });
 
+describe('prefix conflicts inside one change', () => {
+  it('rejects two new capabilities in one change that share a prefix', () => {
+    const root = makeProject({
+      'comb/config.yaml': CONFIG_YAML,
+      'comb/changes/c/.comb.yaml': metaYaml('c'),
+      'comb/changes/c/specs/loan-requests/spec.md': `---\nprefix: LOAN\n---\n## Purpose\np\n\n${addDelta('REQ-LOAN-001')}`,
+      'comb/changes/c/specs/loan-returns/spec.md': `---\nprefix: LOAN\n---\n## Purpose\np\n\n${addDelta('REQ-LOAN-002')}`,
+    });
+    const all = loadAllChanges(root);
+    expect(validateChange(loadProject(root), all[0]!, all).map((d) => [d.code, d.target?.file])).toEqual([
+      ['REQ_ID_PREFIX', 'comb/changes/c/specs/loan-returns/spec.md'],
+    ]);
+  });
+});
+
 describe('decision conflicts that archive would hit', () => {
   const conflicts = (root: string) => {
     const all = loadAllChanges(root);
@@ -107,5 +122,13 @@ describe('decision conflicts that archive would hit', () => {
       'comb/changes/tighten-payment/decisions.md': TIGHTEN_DECISIONS.replace('- **From:** Q-1', '- **From:** Q-1\n- **Supersedes:** D-021'),
     });
     expect(conflicts(root)).toEqual([['DECISION_ID_CONFLICT', 'D-1']]);
+  });
+
+  it('reports two local decisions that supersede the same decision', () => {
+    const first = TIGHTEN_DECISIONS.replace('- **From:** Q-1', '- **From:** Q-1\n- **Supersedes:** D-021');
+    const root = readyProject({
+      'comb/changes/tighten-payment/decisions.md': `${first}\n## D-2: Second\n- **Date:** 2026-10-06\n- **Supersedes:** D-021\n\nrule\n\n**Why:** w\n`,
+    });
+    expect(conflicts(root)).toEqual([['DECISION_ID_CONFLICT', 'D-2']]);
   });
 });

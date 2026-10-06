@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyDelta } from '../../../src/core/change/apply-delta.js';
+import { applyDelta, checkMerged } from '../../../src/core/change/apply-delta.js';
 import { parseDelta } from '../../../src/core/spec/parse-delta.js';
 import { parseSpec } from '../../../src/core/spec/parse-spec.js';
 import { validateCapability } from '../../../src/core/spec/validate-spec.js';
@@ -119,5 +119,12 @@ describe('applyDelta', () => {
     const r = applyDelta(ORDER_SPEC, delta('## ADDED Sections\n\n### Section: Requirements\nnothing\n'), 'd.md');
     expect(r.diagnostics.map((d) => d.code)).toEqual(['SPEC_PARSE']);
     expect(r.text).toBe(ORDER_SPEC);
+  });
+
+  it('checkMerged reports requirements or sections that a merge would hide', () => {
+    const d = delta(MODIFY_PAYMENT_DELTA);
+    const hidden = applyDelta(ORDER_SPEC, d, 'd.md').text.replace('### Requirement: REQ-ORDER-002', '```\n### Requirement: REQ-ORDER-002');
+    expect(checkMerged(ORDER_SPEC, d, hidden, 'd.md').map((x) => x.code)).toEqual(['SPEC_PARSE']);
+    expect(checkMerged(ORDER_SPEC, d, applyDelta(ORDER_SPEC, d, 'd.md').text, 'd.md')).toEqual([]);
   });
 });

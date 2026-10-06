@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { planArchive, type ArchiveOptions, type ArchivePlan } from '../../../src/core/change/archive-plan.js';
 import { loadAllChanges, loadProject } from '../../../src/core/project/load.js';
 import { readyProject, TIGHTEN_DELTA, TIGHTEN_QUESTIONS } from '../../helpers/archive.js';
-import { DECISIONS_MD } from '../../helpers/fixtures.js';
+import { DECISIONS_MD, ORDER_SPEC } from '../../helpers/fixtures.js';
 
 const NO_FLAGS: ArchiveOptions = { yes: false, allowDroppedScenarios: false, allowBaseDrift: false };
 const plan = (root: string, opts: ArchiveOptions = NO_FLAGS) => {
@@ -87,5 +87,16 @@ describe('planArchive', () => {
     const { plan: p, diagnostics } = plan(root);
     expect(p).toBeNull();
     expect(diagnostics.map((d) => d.code)).toEqual(['DECISION_ID_CONFLICT']);
+  });
+
+  it('refuses a merge that would hide requirements (a spec that ends inside an open fence)', () => {
+    const add = '## ADDED Requirements\n\n### Requirement: REQ-ORDER-003 Refund\nRefund on cancel (D-1).\n\n#### Scenario: Cancelled\n- **GIVEN** a paid order\n- **WHEN** it is cancelled\n- **THEN** the buyer is refunded\n';
+    const root = readyProject({
+      'comb/specs/order-lifecycle/spec.md': `${ORDER_SPEC}\n\`\`\`\n`,
+      'comb/changes/tighten-payment/specs/order-lifecycle/spec.md': add,
+    });
+    const { plan: p, diagnostics } = plan(root);
+    expect(p).toBeNull();
+    expect(diagnostics.map((d) => d.code)).toEqual(['SPEC_PARSE']);
   });
 });

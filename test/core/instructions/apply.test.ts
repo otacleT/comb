@@ -25,5 +25,6 @@ describe('instructions apply', () => {
     expect(ins.template).toContain('- [ ] 1.1');
     expect(ins.instruction).toContain('comb/changes/tighten-payment/tasks.md');
     expect(ins.instruction).toContain('high-severity');
+    expect(ins.instruction).toContain('the next step it reports');
   });
 });

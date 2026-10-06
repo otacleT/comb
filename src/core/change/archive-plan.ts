@@ -7,7 +7,7 @@ import { paths, rel } from '../project/paths.js';
 import { parseDelta } from '../spec/parse-delta.js';
 import { parseSpec } from '../spec/parse-spec.js';
 import { computeStatus } from '../workflow/status.js';
-import { applyDelta } from './apply-delta.js';
+import { applyDelta, checkMerged } from './apply-delta.js';
 import { validateChange, validateProject } from './validate-change.js';
 
 export interface ArchiveOptions {
@@ -98,7 +98,7 @@ export function planArchive(
     const delta = parseDelta(deltaText, d.capability, d.file).delta;
     const base = project.specs.get(d.capability) ?? null;
     const applied = applyDelta(base?.text ?? null, delta, d.file);
-    diagnostics.push(...applied.diagnostics);
+    diagnostics.push(...applied.diagnostics, ...checkMerged(base?.text ?? null, delta, applied.text, d.file));
     const path = paths.spec(root, d.capability);
     const file = rel(root, path);
     write(file, base?.text ?? null, applied.text);

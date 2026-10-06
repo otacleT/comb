@@ -1,5 +1,5 @@
 import { diag, type Diagnostic } from '../diagnostics.js';
-import { childBlocks, headingBlocks, type HeadingBlock } from '../markdown/blocks.js';
+import { childBlocks, endsOpen, headingBlocks, type HeadingBlock } from '../markdown/blocks.js';
 import { splitFrontmatter } from '../markdown/frontmatter.js';
 import { parseRequirementHeading } from './ids.js';
 import type { Delta } from './model.js';
@@ -52,6 +52,12 @@ export function parseDelta(text: string, capability: string, file: string): { de
       continue;
     }
     for (const h of childBlocks(blocks, top, 3)) {
+      if (endsOpen(text.slice(h.start, h.end))) {
+        diagnostics.push(
+          diag('error', 'SPEC_PARSE', `"${h.text}" ends inside an unclosed code fence or HTML comment, which would hide what follows it in the spec`,
+            { file, line: h.line }, 'Close every ``` fence and <!-- comment inside the block'),
+        );
+      }
       if (top.text.endsWith('Sections')) {
         if (!h.text.startsWith('Section:')) {
           bad(h, 'Section: <heading>');
