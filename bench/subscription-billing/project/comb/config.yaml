@@ -1,0 +1,4 @@
+version: 1
+language: en
+agents: [claude-code]
+context: "Notely, a note-taking app with Free and Pro plans. Card payments through a PSP."
