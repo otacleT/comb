@@ -5,8 +5,12 @@ export function resultOf(jsonl) {
   let toolErrors = 0;
   let result = null;
   for (const line of jsonl.split('\n')) {
-    if (!line.trim()) continue;
-    const e = JSON.parse(line);
+    let e;
+    try {
+      e = JSON.parse(line);
+    } catch {
+      continue; // blank or non-JSON output lines
+    }
     if (e.type === 'user' && Array.isArray(e.message?.content)) {
       toolErrors += e.message.content.filter((c) => c.type === 'tool_result' && c.is_error).length;
     }
@@ -14,6 +18,7 @@ export function resultOf(jsonl) {
   }
   if (!result) return null;
   return {
+    ok: !result.is_error && (result.subtype === undefined || result.subtype === 'success'),
     turns: result.num_turns,
     costUsd: result.total_cost_usd,
     minutes: Math.round(result.duration_ms / 6000) / 10,
@@ -45,22 +50,59 @@ export function graderPrompt({ spec, answerKey, questions }) {
   ].join('\n');
 }
 
-/** The grader's verdict for every key; keys the grader skipped count as not matched. */
+const questionId = (q) => (typeof q === 'string' && /^Q-\d+$/.test(q.trim()) ? q.trim() : null);
+
+/**
+ * The grader's verdict for every key. The last ```json fence wins (a grader may correct itself); only a `Q-<n>` counts
+ * as a match, so "none", "N/A" or "" never inflate recall; keys the grader skipped count as not matched.
+ */
 export function parseGrade(text, keys) {
-  const m = /```json\s*([\s\S]*?)```/.exec(text) ?? /(\{[\s\S]*\})/.exec(text);
-  if (!m) throw new Error('grader returned no JSON');
-  const { matches } = JSON.parse(m[1]);
-  const byKey = new Map((matches ?? []).map((x) => [x.key, x]));
-  return keys.map((key) => ({ key, question: byKey.get(key)?.question ?? null, quote: byKey.get(key)?.quote ?? '' }));
+  const fences = [...text.matchAll(/```json\s*([\s\S]*?)```/g)];
+  const raw = fences.length > 0 ? fences[fences.length - 1][1] : /(\{[\s\S]*\})/.exec(text)?.[1];
+  if (!raw) throw new Error('grader returned no JSON');
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed?.matches)) throw new Error('grader JSON has no "matches" array');
+  const byKey = new Map(parsed.matches.map((x) => [x.key, x]));
+  return keys.map((key) => ({ key, question: questionId(byKey.get(key)?.question), quote: byKey.get(key)?.quote ?? '' }));
 }
 
+/** `<subject> [--runs N | --runs=N]`, or null when the arguments are not usable. */
+export function parseArgs(argv) {
+  const [subject, ...rest] = argv;
+  if (!subject || subject.startsWith('-')) return null;
+  let runs = 1;
+  for (let i = 0; i < rest.length; i++) {
+    const m = /^--runs(?:=(.*))?$/.exec(rest[i]);
+    if (!m) return null;
+    runs = Number(m[1] ?? rest[++i]);
+  }
+  return Number.isInteger(runs) && runs > 0 ? { subject, runs } : null;
+}
+
+/** Runs `runOne(i)` for i = 1..n. A run that throws is recorded as { run, error } and the others continue; `save` gets the results after every run. */
+export function runAll(n, runOne, save) {
+  const results = [];
+  for (let i = 1; i <= n; i++) {
+    try {
+      results.push(runOne(i));
+    } catch (e) {
+      results.push({ run: i, error: e instanceof Error ? e.message : String(e) });
+    }
+    save(results);
+  }
+  return results;
+}
+
+/** Recall over the runs that completed; failed runs are counted, not scored. */
 export function summarize(subject, runs, keys) {
-  const recalls = runs.map((r) => r.matches.filter((x) => x.question).length);
+  const done = runs.filter((r) => !r.error);
+  const recalls = done.map((r) => r.matches.filter((x) => x.question).length);
   return {
     subject,
     keys: keys.length,
     recalls,
+    failed: runs.length - done.length,
     mean: recalls.reduce((a, b) => a + b, 0) / (recalls.length || 1),
-    costUsd: runs.reduce((sum, r) => sum + r.review.costUsd + r.grade.costUsd, 0),
+    costUsd: done.reduce((sum, r) => sum + r.review.costUsd + r.grade.costUsd, 0),
   };
 }

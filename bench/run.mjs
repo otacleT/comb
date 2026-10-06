@@ -7,16 +7,15 @@ import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync 
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { answerKeys, graderPrompt, parseGrade, resultOf, summarize } from './lib.mjs';
+import { answerKeys, graderPrompt, parseArgs, parseGrade, resultOf, runAll, summarize } from './lib.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const [subject, ...rest] = process.argv.slice(2);
-const at = rest.indexOf('--runs');
-const runs = at >= 0 ? Number(rest[at + 1]) : 1;
-if (!subject || !(runs > 0)) {
+const args = parseArgs(process.argv.slice(2));
+if (!args) {
   console.error('usage: node bench/run.mjs <subject> [--runs N]');
   process.exit(2);
 }
+const { subject, runs } = args;
 const dir = join(repo, 'bench', subject);
 const config = JSON.parse(readFileSync(join(dir, 'bench.json'), 'utf8'));
 const answerKey = readFileSync(join(dir, 'expected-highs.md'), 'utf8');
@@ -40,13 +39,18 @@ const claude = (prompt, cwd, tools) => {
     encoding: 'utf8',
     maxBuffer: 1 << 28,
   });
+  if (r.error) throw new Error(`could not run claude: ${r.error.message}`);
   const result = resultOf(r.stdout ?? '');
   if (!result) throw new Error(`claude produced no result event: ${r.stderr}`);
+  if (!result.ok) throw new Error(`claude ended with an error: ${result.text}`);
   return result;
 };
 
-const results = [];
-for (let i = 1; i <= runs; i++) {
+mkdirSync(join(repo, 'bench', 'results'), { recursive: true });
+const out = join(repo, 'bench', 'results', `${subject}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+const save = (results) => writeFileSync(out, `${JSON.stringify({ ...summarize(subject, results, keys), pass: config.pass, runs: results }, null, 2)}\n`);
+
+const results = runAll(runs, (i) => {
   const work = join(tmp, `run-${i}`);
   cpSync(join(dir, 'project'), work, { recursive: true });
   sh('git init -q && comb init --language en >/dev/null && git add -A && git commit -qm base', work);
@@ -54,11 +58,11 @@ for (let i = 1; i <= runs; i++) {
   const questions = readFileSync(join(work, 'comb', 'changes', config.change, 'questions.md'), 'utf8');
   const grade = claude(graderPrompt({ spec, answerKey, questions }), work, ['Read']);
   const matches = parseGrade(grade.text, keys);
-  results.push({ run: i, workDir: work, review: { ...review, text: undefined }, grade: { costUsd: grade.costUsd, minutes: grade.minutes }, matches });
   console.log(`run ${i}: ${matches.filter((m) => m.question).length}/${keys.length}  (review $${review.costUsd.toFixed(2)}, ${review.minutes} min, ${review.toolErrors} tool errors)`);
-}
+  return { run: i, workDir: work, review: { ...review, text: undefined }, grade: { costUsd: grade.costUsd, minutes: grade.minutes }, matches };
+}, save);
+for (const r of results.filter((x) => x.error)) console.log(`run ${r.run}: failed: ${r.error}`);
 const summary = summarize(subject, results, keys);
-mkdirSync(join(repo, 'bench', 'results'), { recursive: true });
-const out = join(repo, 'bench', 'results', `${subject}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
-writeFileSync(out, `${JSON.stringify({ ...summary, pass: config.pass, runs: results }, null, 2)}\n`);
-console.log(`mean ${summary.mean.toFixed(1)}/${keys.length} (pass bar ${config.pass}), $${summary.costUsd.toFixed(2)}; written to ${out}`);
+console.log(
+  `mean ${summary.mean.toFixed(1)}/${keys.length} over ${summary.recalls.length} run(s) (pass bar ${config.pass}), ${summary.failed} failed, $${summary.costUsd.toFixed(2)}; written to ${out}`,
+);

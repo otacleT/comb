@@ -497,7 +497,7 @@ bench/                 # S2：レビューの再現率を測るベンチマー�
 - SKILL.md は薄い手順書にする。
   - frontmatter：`name`、`description`、`allowed-tools: Bash(comb:*)`、`metadata.generatedBy: comb@<version>`
   - 本文：「`comb instructions <x> --json` を実行し、返ってきた instruction・rules・template に従う → validate」という流れだけを書く。観点の定義や書式は書かない。
-- `comb update` は、`generatedBy` のバージョンを比べて、Comb が生成したファイルだけを再生成する。ユーザーが作ったファイルには触れない。
+- `comb update` は、`generatedBy` のバージョンを比べて、Comb が生成したファイルだけを再生成する。ユーザーが作ったファイルと、ユーザーが編集したファイルには触れない。より新しい comb が生成したファイルは上書きせず、`newer` として報告する（古い comb による巻き戻しを防ぐ）。
 - 将来、Codex や Cursor に対応するときは、`AgentAdapter` を追加する（v0.2）。
 
 ## 9. 後のマイルストーンの概略（v0 では作らない）

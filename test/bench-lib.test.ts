@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { answerKeys, graderPrompt, parseGrade, resultOf, summarize } from '../bench/lib.mjs';
+import { answerKeys, graderPrompt, parseArgs, parseGrade, resultOf, runAll, summarize } from '../bench/lib.mjs';
 
 const line = (o: unknown): string => JSON.stringify(o);
 
@@ -11,7 +11,7 @@ describe('bench/lib', () => {
       line({ type: 'result', num_turns: 12, total_cost_usd: 2.5, duration_ms: 90000, result: 'done' }),
       '',
     ].join('\n');
-    expect(resultOf(jsonl)).toEqual({ turns: 12, costUsd: 2.5, minutes: 1.5, toolErrors: 1, text: 'done' });
+    expect(resultOf(jsonl)).toEqual({ ok: true, turns: 12, costUsd: 2.5, minutes: 1.5, toolErrors: 1, text: 'done' });
     expect(resultOf(line({ type: 'system' }))).toBeNull();
   });
 
@@ -45,8 +45,44 @@ describe('bench/lib', () => {
       subject: 's',
       keys: 7,
       recalls: [5, 6],
+      failed: 0,
       mean: 5.5,
       costUsd: 8,
     });
+  });
+
+  it('accepts only Q-<n> as a matched question, uses the last JSON fence, and rejects a reply without matches', () => {
+    const reply = '```json\n{"matches":[{"key":"BL-01","question":"Q-9"}]}\n```\nCorrection:\n```json\n{"matches":[{"key":"BL-01","question":"none"},{"key":"BL-02","question":" Q-2 "},{"key":"BL-03","question":""}]}\n```';
+    expect(parseGrade(reply, ['BL-01', 'BL-02', 'BL-03']).map((m) => m.question)).toEqual([null, 'Q-2', null]);
+    expect(() => parseGrade('```json\n{"results":[]}\n```', ['BL-01'])).toThrow('no "matches" array');
+  });
+
+  it('marks a transcript whose result is an error', () => {
+    const failed = line({ type: 'result', subtype: 'error_during_execution', is_error: true, num_turns: 3, total_cost_usd: 0.5, duration_ms: 6000 });
+    expect(resultOf(failed)?.ok).toBe(false);
+    expect(resultOf(`not json\n${failed}`)?.turns).toBe(3);
+  });
+
+  it('parses --runs N and --runs=N', () => {
+    expect(parseArgs(['s', '--runs', '3'])).toEqual({ subject: 's', runs: 3 });
+    expect(parseArgs(['s', '--runs=2'])).toEqual({ subject: 's', runs: 2 });
+    expect(parseArgs(['s'])).toEqual({ subject: 's', runs: 1 });
+    expect(parseArgs([])).toBeNull();
+    expect(parseArgs(['s', '--runs', 'x'])).toBeNull();
+  });
+
+  it('records a failed run instead of losing the others, and saves after every run', () => {
+    const saved: number[] = [];
+    const results = runAll(3, (i: number) => {
+      if (i === 2) throw new Error('boom');
+      return { run: i, ok: true };
+    }, (rs: unknown[]) => saved.push(rs.length));
+    expect(results).toEqual([{ run: 1, ok: true }, { run: 2, error: 'boom' }, { run: 3, ok: true }]);
+    expect(saved).toEqual([1, 2, 3]);
+  });
+
+  it('summarizes only the runs that completed', () => {
+    const ok = { review: { costUsd: 3 }, grade: { costUsd: 1 }, matches: [{ key: 'K', question: 'Q-1', quote: '' }] };
+    expect(summarize('s', [ok, { run: 2, error: 'boom' }], ['K'])).toEqual({ subject: 's', keys: 1, recalls: [1], failed: 1, mean: 1, costUsd: 4 });
   });
 });

@@ -13,6 +13,7 @@ export const describeInit = (r: InitResult): string =>
     ...r.updated.map((f) => `updated  ${f}`),
     ...r.skipped.map((f) => `kept     ${f}`),
     ...r.modified.map((f) => `kept     ${f} (edited by you; not updated)`),
+    ...r.newer.map((f) => `kept     ${f} (made by a newer comb; upgrade comb to update it)`),
   ].join('\n');
 
 export function registerInit(program: Command, ctx: CliContext): void {

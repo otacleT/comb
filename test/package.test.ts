@@ -27,6 +27,7 @@ describe('package.json', () => {
     expect(pkg.name).toBe('@otaclet/comb');
     expect(pkg.version).toBe('0.1.0');
     expect(pkg.scripts.prepack).toBe('npm run build');
+    expect(pkg.publishConfig).toEqual({ access: 'public' });
     expect(readFileSync('CHANGELOG.md', 'utf8')).toContain('## 0.1.0');
     expect(readFileSync('LICENSE', 'utf8')).toContain('MIT License');
   });

@@ -22,6 +22,9 @@
     "templates",
     "CHANGELOG.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=22.12"
   },
