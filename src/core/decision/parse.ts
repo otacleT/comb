@@ -74,17 +74,27 @@ const QUESTION_FIELDS = ['status', 'severity', 'refs', 'lens', 'decision'] as co
 const DECISION_FIELDS = ['date', 'refs', 'from', 'supersedes', 'superseded by', 'change'] as const;
 const byLine = (a: Diagnostic, b: Diagnostic): number => (a.target?.line ?? 0) - (b.target?.line ?? 0);
 
+/** Requirement ids in a Refs value; notes, parentheses (half- or full-width), separators and backticks around them are ignored. */
 export function parseIdList(value: string | undefined): string[] {
   if (!value) return [];
-  return value
-    .split(/[,、\s]+/)
-    .map((t) => t.trim())
-    .filter((t) => t !== '' && !/^[—–-]+$/.test(t) && !t.startsWith('('));
+  return [...new Set(value.match(/\bREQ-[A-Za-z0-9]+-\d+\b/g) ?? [])];
 }
 
-const firstToken = (value: string | undefined): string | null => {
-  const t = value?.trim().split(/\s+/)[0];
-  return t ? t : null;
+const undecorated = (value: string): string => value.replace(/[`*]/g, '').trim();
+
+/** The first `<prefix>-<n>` id in a value such as "Q-1, Q-2" or "D-021 (price rule)"; otherwise its first word. */
+const idValue = (prefix: 'Q' | 'D', value: string | undefined): string | null => {
+  if (!value) return null;
+  const plain = undecorated(value);
+  return new RegExp(`\\b${prefix}-\\d+\\b`).exec(plain)?.[0] ?? (plain.split(/\s+/)[0] || null);
+};
+
+/** A question's Decision: the decision id at its start ("D-1 (A を採用)" → "D-1"), or "none…" kept whole with its reason. */
+const decisionValue = (value: string | undefined): string | null => {
+  if (!value) return null;
+  const plain = undecorated(value);
+  if (/^none\b/i.test(plain)) return plain;
+  return /^D-\d+\b/.exec(plain)?.[0] ?? plain;
 };
 
 const orNull = (value: string | undefined): string | null => (value ? value : null);
@@ -112,7 +122,7 @@ export function parseQuestions(text: string, file: string): { questions: Questio
       severity: severity.value,
       refs: parseIdList(fields.get('refs')),
       lens: orNull(fields.get('lens')),
-      decision: orNull(fields.get('decision')),
+      decision: decisionValue(fields.get('decision')),
       answer: /^\*\*Answer:\*\*\s*(.+)$/m.exec(prose)?.[1]?.trim() ?? null,
       line: b.line,
     };
@@ -137,22 +147,25 @@ export function parseDecisions(text: string, file: string): { decisions: Decisio
     }
     const id = m[1] as string;
     const { fields, prose, duplicates } = readFields(text.slice(b.contentStart, b.end));
-    const whyAt = prose.search(/^\*\*Why:\*\*/m);
+    const WHY_RE = /^\*\*Why(?::\*\*|\*\*\s*:)\s*/m;
+    const whyAt = prose.search(WHY_RE);
     const rule = (whyAt >= 0 ? prose.slice(0, whyAt) : prose).trim();
-    const why = whyAt >= 0 ? prose.slice(whyAt).replace(/^\*\*Why:\*\*\s*/, '').trim() : '';
+    const why = whyAt >= 0 ? prose.slice(whyAt).replace(WHY_RE, '').trim() : (fields.get('why') ?? '');
     const t = { file, line: b.line, id };
     if (seen.has(id)) diagnostics.push(diag('error', 'SPEC_PARSE', `duplicate decision ${id}`, t));
     seen.add(id);
     if (rule === '') diagnostics.push(diag('error', 'SPEC_PARSE', `${id}: the rule text is missing`, t, 'Write the rule as a paragraph under the fields'));
+    if (!fields.get('date')) diagnostics.push(diag('error', 'SPEC_PARSE', `${id}: Date is missing`, t, 'Add "- **Date:** YYYY-MM-DD"'));
+    if (why === '') diagnostics.push(diag('error', 'SPEC_PARSE', `${id}: the reason (**Why:**) is missing`, t, 'Add a paragraph "**Why:** <the reason, in the user\'s words>"'));
     diagnostics.push(...duplicateFields(duplicates, DECISION_FIELDS, t));
     decisions.push({
       id,
       title: (m[2] ?? '').trim(),
       date: orNull(fields.get('date')),
       refs: parseIdList(fields.get('refs')),
-      from: firstToken(fields.get('from')),
-      supersedes: firstToken(fields.get('supersedes')),
-      supersededBy: firstToken(fields.get('superseded by')),
+      from: idValue('Q', fields.get('from')),
+      supersedes: idValue('D', fields.get('supersedes')),
+      supersededBy: idValue('D', fields.get('superseded by')),
       change: orNull(fields.get('change')),
       rule,
       why: why === '' ? null : why,

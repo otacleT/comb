@@ -110,7 +110,7 @@ export function planArchive(
       added: delta.added.map((r) => r.id),
       modified: delta.modified.map((r) => r.id),
       removed: delta.removed.map((x) => x.id),
-      sections: [...delta.modifiedSections, ...delta.addedSections].map((s) => s.heading),
+      sections: [...(delta.purpose !== null ? ['Purpose'] : []), ...[...delta.modifiedSections, ...delta.addedSections].map((s) => s.heading)],
     });
   }
   for (const name of ['questions', 'decisions'] as const) {

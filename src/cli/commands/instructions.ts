@@ -18,6 +18,8 @@ const human = (i: Instructions): string =>
       ? `Open questions:\n${i.context.openQuestions.map((q) => `- ${q.id} (${q.severity}) ${q.title}`).join('\n')}`
       : '',
     i.lenses.length > 0 ? i.lenses.map((l) => l.definition.trim()).join('\n\n') : '',
+    i.context.changedSinceReview !== null && i.context.changedSinceReview.length > 0 ? `Changed since the review: ${i.context.changedSinceReview.join(', ')}` : '',
+    i.artifact === 'clarify' ? `Batch: ${i.context.batch}` : '',
     `Next ids: ${JSON.stringify({ ...i.ids.nextRequirement, question: i.ids.nextQuestion, decision: i.ids.nextDecision })}`,
     `Template:\n${i.template.trim()}`,
   ]
@@ -46,6 +48,10 @@ export function registerInstructions(program: Command, ctx: CliContext): void {
         return;
       }
       // Argument errors come before looking for the project (as with commander's own checks).
+      if (artifact === 'docs' && opts.change !== undefined) {
+        usageError(ctx, 'instructions', json, 'USAGE_ERROR', 'docs is not tied to a change: drop --change', 'comb instructions docs');
+        return;
+      }
       if (artifact !== 'docs' && opts.change === undefined) {
         usageError(ctx, 'instructions', json, 'USAGE_ERROR', `--change <id> is required for ${artifact}`, `comb instructions ${artifact} --change <id>`);
         return;

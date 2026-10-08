@@ -22,6 +22,12 @@ describe('deltaHash', () => {
     expect(deltaHash(changeWith(DELTA.replace(/\n/g, '\r\n')))).toBe(h);
     expect(deltaHash(changeWith(DELTA.replace('x\n', 'y\n')))).not.toBe(h);
   });
+
+  it('ignores trailing whitespace at the end of a delta', () => {
+    const h = deltaHash(changeWith(DELTA));
+    expect(deltaHash(changeWith(DELTA.trimEnd()))).toBe(h);
+    expect(deltaHash(changeWith(`${DELTA}\n\n`))).toBe(h);
+  });
 });
 
 describe('requirementHashes / changedSince', () => {

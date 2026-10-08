@@ -75,3 +75,24 @@ describe('questions and decisions of a change', () => {
     expect(ds.filter((d) => d.code === 'SPEC_PARSE').map((d) => d.target?.file)).toEqual(['comb/changes/c/questions.md']);
   });
 });
+
+describe('decision values written loosely', () => {
+  it('reads the decision id at the start of the value and asks for a reason after a bare none', () => {
+    const run = (decision: string) => {
+      const { project: p, all } = project({
+        'comb/decisions.md': DECISIONS_MD,
+        'comb/changes/c/.comb.yaml': metaYaml('c'),
+        'comb/changes/c/questions.md': QUESTIONS_MD.replace('- **Decision:** D-1', `- **Decision:** ${decision}`),
+        'comb/changes/c/decisions.md': LOCAL_DECISIONS_MD,
+      });
+      return validateChange(p, all[0]!, all).map((d) => d.code);
+    };
+    expect(run('D-1 (A を採用)')).toEqual([]);
+    expect(run('**D-1**')).toEqual([]);
+    expect(run('none: covered by REQ-ORDER-002')).toEqual([]);
+    expect(run('none')).toEqual(['QUESTION_UNRESOLVED_LINK']);
+    expect(run('none：REQ-ORDER-002 で決まっている')).toEqual([]);
+    expect(run('none (covered by REQ-ORDER-002)')).toEqual([]);
+    expect(run('none（REQ-ORDER-002 で決まっている）')).toEqual([]);
+  });
+});

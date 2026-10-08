@@ -117,4 +117,15 @@ describe('comb docs', () => {
     expect(stamp.env.data.skipped.map((x: { reason: string }) => x.reason)).toEqual(Array(4).fill('sources changed since it was written: rewrite it with /comb:docs'));
     expect(states((await json(['docs'], root)).env)['docs/features.md']).toBe('stale');
   });
+
+  it('reports an output path that is a folder instead of crashing', async () => {
+    const root = project();
+    mkdirSync(join(root, 'docs/flows.md'), { recursive: true });
+    const { code, env } = await json(['docs'], root);
+    expect(code).toBe(1);
+    expect(states(env)['docs/flows.md']).toBe('user-owned');
+    const stamp = await json(['docs', 'stamp'], root);
+    expect(stamp.code).toBe(0);
+    expect(stamp.env.data.skipped).toContainEqual({ path: 'docs/flows.md', reason: 'user-owned' });
+  });
 });

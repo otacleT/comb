@@ -23,4 +23,15 @@ describe('runCli', () => {
     expect(localDate(new Date(2026, 9, 6, 8, 30))).toBe('2026-10-06');
     expect(localDate(new Date(2026, 9, 6, 23, 59))).toBe('2026-10-06');
   });
+
+  it('gives the local date at a fixed instant in a non-UTC time zone', () => {
+    const tz = process.env.TZ;
+    process.env.TZ = 'Asia/Tokyo';
+    try {
+      expect(localDate(new Date('2026-10-05T23:30:00Z'))).toBe('2026-10-06');
+    } finally {
+      if (tz === undefined) delete process.env.TZ;
+      else process.env.TZ = tz;
+    }
+  });
 });

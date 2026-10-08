@@ -1,7 +1,9 @@
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { runCli } from '../../src/cli/app.js';
 import { CONFIG_YAML, DECISIONS_MD, ORDER_SPEC, metaYaml } from '../helpers/fixtures.js';
-import { TIGHTEN_QUESTIONS } from '../helpers/archive.js';
+import { readyProject, TIGHTEN_DELTA, TIGHTEN_QUESTIONS } from '../helpers/archive.js';
 import { makeProject } from '../helpers/project.js';
 
 describe('comb instructions', () => {
@@ -63,5 +65,20 @@ describe('comb instructions docs', () => {
     const r = await runCli(['instructions', 'review', '--json'], root);
     expect(r.code).toBe(2);
     expect(JSON.parse(r.stdout).diagnostics[0].code).toBe('USAGE_ERROR');
+  });
+
+  it('rejects --change for docs', async () => {
+    const r = await runCli(['instructions', 'docs', '--change', 'x', '--json'], root);
+    expect(r.code).toBe(2);
+    expect(JSON.parse(r.stdout).diagnostics[0].code).toBe('USAGE_ERROR');
+  });
+});
+
+describe('human-readable instructions', () => {
+  it('shows the requirements changed since the review and the clarify batch size', async () => {
+    const root = readyProject();
+    writeFileSync(join(root, 'comb/changes/tighten-payment/specs/order-lifecycle/spec.md'), TIGHTEN_DELTA.replace('2 days', 'two days'));
+    expect((await runCli(['instructions', 'review', '--change', 'tighten-payment'], root)).stdout).toContain('Changed since the review: REQ-ORDER-002');
+    expect((await runCli(['instructions', 'clarify', '--change', 'tighten-payment'], root)).stdout).toContain('Batch: 3');
   });
 });

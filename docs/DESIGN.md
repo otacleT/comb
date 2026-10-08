@@ -141,7 +141,8 @@ prefix: ORDER          # 新しい capability を作るときだけ必須
 
 - 対象は **ID で特定**する。OpenSpec のように見出しのテキストでは特定しない。そのため RENAMED は不要で、タイトルの変更は MODIFIED で行う。
 - 新しい capability を作るときは、delta に `## Purpose` を含める。既存の capability の Purpose は、`## Purpose` か `MODIFIED Sections` の `Section: Purpose` で置き換える。
-- `Section: Requirements` は使えない（`SPEC_PARSE`）。正本の要件が隠れてしまうため。
+- `Section: Requirements` は使えない（`SPEC_PARSE`）。正本の要件が隠れてしまうため。Purpose を `## Purpose` と `Section: Purpose` の両方で書くこともできない。
+- 節が小見出しを持つときは、delta では1段深く（`####`）書く。archive が正本では `###` に戻す。
 - `(D-n)` のように、change ローカルの Decision を本文で参照してよい。archive のときに恒久IDへ書き換える。
 
 ### 3.3 `proposal.md`
@@ -302,9 +303,10 @@ type Decision    = { id: string; title: string; date: string; refs: string[]; fr
 | `DELTA_CONFLICT` | error | 同じ ID が delta の複数の節に出てくる |
 | `REMOVED_NO_REASON` | error | REMOVED に Reason がない |
 | `SCENARIO_DROPPED` | warning | MODIFIED で、既存のシナリオ名が消えている |
-| `REF_UNKNOWN_REQ` | error | Question / Decision の Refs に存在しない要件がある |
-| `REF_UNKNOWN_DECISION` | error | 本文や Supersedes に存在しない Decision がある |
-| `REF_UNKNOWN_QUESTION` | error | Decision の From に存在しない質問がある |
+| `SCENARIO_CONTENT_DROPPED` | warning | MODIFIED で、既存のシナリオの後ろにあった注記や例（手順以外の行）が消えている |
+| `REF_UNKNOWN_REQ` | error | Question / Decision の Refs、または生成したドキュメントの引用に、存在しない要件がある |
+| `REF_UNKNOWN_DECISION` | error | 本文や Supersedes、または生成したドキュメントの引用に、存在しない Decision がある |
+| `REF_UNKNOWN_QUESTION` | error | Decision の From に存在しない質問がある。ドキュメントでは、引用した `<change-id>#Q-n` が archive 済みの change にない（日付付きのフォルダ名で書いたときは、fix が日付なしの形を示す） |
 | `QUESTION_UNRESOLVED_LINK` | error | answered なのに `Decision:` がない（`D-n` か `none: <理由>` が必要） |
 | `BASE_DRIFT` | warning | 提案時から正本の対象要件が変わっている（S1） |
 
@@ -402,6 +404,7 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | `comb new change <id>` | change のフォルダと `.comb.yaml` を作る | M3 |
 | `comb status [--change <id>] [--json]` | 成果物の状態、ゲート、next、未決質問の件数、ベースのずれ | M7 |
 | `comb instructions <artifact> --change <id> [--json]` | テンプレート、ルール、文脈、関連する正本の抜粋、次に使える ID、書き出し先のパス | M7 |
+| `comb instructions docs [--json]` | ドキュメントを書くための指示、profile の書き出し先とテンプレート、読むファイル、引用の書式（change に結びつかないので `--change` は受け付けない） | v0.1 |
 | `comb validate [--change <id>] [--json]` | 3〜4 章の規則で検査する | M8 |
 | `comb mark-reviewed --change <id>` | `review.md` の frontmatter に、delta のハッシュと要件ごとのハッシュを書く | M5 |
 | `comb archive <id> [--yes] [--allow-dropped-scenarios] [--allow-base-drift]` | 5.3 の手順 | M9 |
@@ -446,11 +449,12 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | `ARCHIVE_BLOCKED` | 1 | archive の条件（5.1）を満たしていない。満たしていない条件ごとに1件出し、fix に解消の方法やフラグを書く |
 | `DECISION_ID_CONFLICT` | 1 | change ローカルの Decision ID と同じ文字列の ID が正本にある、または Supersedes の対象がすでに別の Decision に置き換えられている |
 | `ARCHIVE_TARGET_EXISTS` | 1 | archive の移動先のフォルダがすでにある |
-| `ARCHIVE_IO_FAILED` | 1 | archive 中にファイルの読み書きが失敗した。移動の前なら何も変わらない。移動の後なら、まだ置き換えていないファイルと、残っている一時ファイルを示す |
+| `ARCHIVE_IO_FAILED` | 1 | archive 中にファイルの読み書きが失敗した。移動の前なら何も変わらない。移動の後なら、まだ置き換えていないファイルと、残っている一時ファイルを示し、`data` に `complete: false` の要約（移動先と Decision ID の対応）を返す |
 | `ID_NOT_FOUND` | 2 | `comb show` に指定した ID の要件、Decision、change が見つからない |
 | `DOC_MISSING` / `DOC_STALE` / `DOC_USER_OWNED` | 1 | `comb docs`：ドキュメントがない／生成元が変わった（または stamp 前）／書き出し先に印のないファイルがある |
 | `REF_EMPTY_CONTEXT` | 1 | `comb docs`：`config:context` を引用しているが、config の context が空 |
 | `DOC_UNCITED_SECTION` / `DOC_UNCOVERED` | 0（warning） | `comb docs`：引用のない節がある／どのドキュメントにも引用されない要件がある |
+| `DOC_CITES_SUPERSEDED` | 0（warning） | `comb docs`：decisions を生成元に持たないドキュメントが、置き換えられた Decision を引用している |
 
 `instructions` の `data` は次の形。
 
@@ -492,7 +496,7 @@ bench/                 # S2：レビューの再現率を測るベンチマー�
 ```
 
 - 依存は最小限にする：commander、yaml、mdast-util-from-markdown、mdast-util-to-string（remark のパーサの中核）。テストは vitest。config の検証は手書きで行う（zod は必要になるまで入れない）。
-- Node 22.12 以上（D-017）。npm で配布する。パッケージ名は `@otaclet/comb`（D-020）で、コマンド名は `comb`（npm の `comb` は使用済み。候補は `@otaclet/comb`）。
+- Node 22.12 以上（D-017）。npm で配布する。パッケージ名は `@otaclet/comb`（D-020。npm の `comb` は使用済み）で、コマンド名は `comb`。
 - `core/` の関数は、ファイル入出力を持たない純粋関数を基本にする。入出力は `project/` と `change/` の archive トランザクションに閉じ込める。
 - テレメトリはなし。
 

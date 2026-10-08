@@ -48,6 +48,7 @@ export function sourceHash(sources: readonly DocSource[], inputs: DocInputs): st
 /** The ids documents may cite: canonical requirements (and retired ones, to name them), decisions and archived questions. */
 export function docRefs(project: Project, questions: ArchivedQuestions[]): DocRefs {
   const capabilities = [...project.specs.values()].map((s) => s.capability);
+  const decisions = parseDecisions(project.decisionsText ?? '', 'comb/decisions.md').decisions;
   const byChange = new Map<string, Set<string>>();
   for (const q of questions) {
     const ids = byChange.get(q.change) ?? new Set<string>();
@@ -57,8 +58,9 @@ export function docRefs(project: Project, questions: ArchivedQuestions[]): DocRe
   return {
     requirements: new Set(capabilities.flatMap((c) => c.requirements.map((r) => r.id))),
     retired: new Set(capabilities.flatMap((c) => c.retired)),
-    decisions: new Set(parseDecisions(project.decisionsText ?? '', 'comb/decisions.md').decisions.map((d) => d.id)),
+    decisions: new Set(decisions.map((d) => d.id)),
     questions: byChange,
     context: project.config.context.trim() !== '',
+    superseded: new Map(decisions.filter((d) => d.supersededBy !== null).map((d) => [d.id, d.supersededBy as string])),
   };
 }

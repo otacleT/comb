@@ -5,7 +5,7 @@
 
 ## <Flow>
 
-<The journey as numbered steps (who does what, what the product does in response), each step cited. Add the states the flow moves through when the specs define them.>
+<The journey as numbered steps (who does what, what the product does in response), each step cited. Add the states the flow moves through, citing the requirements that define each transition.>
 
 ## Gaps
 

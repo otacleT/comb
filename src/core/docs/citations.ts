@@ -9,6 +9,8 @@ export interface DocRefs {
   questions: ReadonlyMap<string, ReadonlySet<string>>;
   /** Whether comb/config.yaml has a non-empty context (what `config:context` cites). */
   context: boolean;
+  /** Superseded decision → the decision that replaced it. */
+  superseded: ReadonlyMap<string, string>;
 }
 
 export interface Citations {
@@ -36,10 +38,19 @@ export function extractCitations(text: string): Citations {
 
 const citesAnything = (c: Citations): boolean => c.requirements.length + c.decisions.length + c.questions.length > 0 || c.context;
 
-/** Every cited id must exist in the canonical sources (documents reflect archived content only). */
-export function checkCitations(text: string, file: string, refs: DocRefs): Diagnostic[] {
+const DATED_CHANGE_RE = /^\d{4}-\d{2}-\d{2}-(.+)$/;
+
+/**
+ * Every cited id must exist in the canonical sources (documents reflect archived content only). Outside a document
+ * that tells the decision history (`history`), citing a superseded decision is a warning.
+ */
+export function checkCitations(text: string, file: string, refs: DocRefs, opts: { history?: boolean } = {}): Diagnostic[] {
   const c = extractCitations(text);
-  const fix = 'Run /comb:docs to rewrite it from the current specs';
+  const fix = 'Cite an id that exists in the canonical specs and decisions, or remove the statement';
+  const questionFix = (q: { change: string; id: string }): string => {
+    const undated = DATED_CHANGE_RE.exec(q.change)?.[1];
+    return undated !== undefined && refs.questions.get(undated)?.has(q.id) ? `Cite it as ${undated}#${q.id} (without the date)` : fix;
+  };
   return [
     ...c.requirements
       .filter((id) => !refs.requirements.has(id))
@@ -47,7 +58,10 @@ export function checkCitations(text: string, file: string, refs: DocRefs): Diagn
     ...c.decisions.filter((id) => !refs.decisions.has(id)).map((id) => diag('error', 'REF_UNKNOWN_DECISION', `${id} is not in comb/decisions.md`, { file, id }, fix)),
     ...c.questions
       .filter((q) => !refs.questions.get(q.change)?.has(q.id))
-      .map((q) => diag('error', 'REF_UNKNOWN_QUESTION', `${q.change}#${q.id} is not a question of an archived change`, { file, id: `${q.change}#${q.id}` }, fix)),
+      .map((q) => diag('error', 'REF_UNKNOWN_QUESTION', `${q.change}#${q.id} is not a question of an archived change`, { file, id: `${q.change}#${q.id}` }, questionFix(q))),
+    ...(opts.history ? [] : c.decisions
+      .filter((id) => refs.superseded.has(id))
+      .map((id) => diag('warning', 'DOC_CITES_SUPERSEDED', `${id} was superseded by ${refs.superseded.get(id)}`, { file, id }, 'Cite the decision that replaced it, or rewrite the document with /comb:docs'))),
     ...(c.context && !refs.context
       ? [diag('error', 'REF_EMPTY_CONTEXT', 'config:context is cited, but comb/config.yaml has no context', { file }, 'Write the context in comb/config.yaml, or cite requirements instead')]
       : []),

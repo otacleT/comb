@@ -66,4 +66,31 @@ describe('comb update', () => {
     expect(data.updated).toEqual([]);
     expect(read(root, SKILL)).toContain('generatedBy: comb@9.9.9');
   });
+
+  it('says when no agent is configured', async () => {
+    const root = olderProject();
+    writeFileSync(join(root, 'comb/config.yaml'), 'version: 1\nlanguage: ja\nagents: []\n');
+    const r = await runCli(['update'], root);
+    expect(r.code).toBe(0);
+    expect(r.stdout).toContain('no agents configured in comb/config.yaml');
+  });
+
+  it('reports generated files that this comb no longer generates, without deleting them', async () => {
+    const root = olderProject();
+    mkdirSync(join(root, '.claude/skills/comb-old'), { recursive: true });
+    writeFileSync(join(root, '.claude/skills/comb-old/SKILL.md'), '---\nname: comb-old\nmetadata:\n  generatedBy: comb@0.0.1 sha256:0123456789abcdef\n---\nold\n');
+    mkdirSync(join(root, '.claude/skills/comb-mine'), { recursive: true });
+    writeFileSync(join(root, '.claude/skills/comb-mine/SKILL.md'), '# mine\n');
+    const data = JSON.parse((await runCli(['update', '--json'], root)).stdout).data;
+    expect(data.orphaned).toEqual(['.claude/skills/comb-old/SKILL.md']);
+    expect(read(root, '.claude/skills/comb-old/SKILL.md')).toContain('old');
+  });
+
+  it('does not call a skill from a newer comb orphaned', async () => {
+    const root = olderProject();
+    mkdirSync(join(root, '.claude/skills/comb-future'), { recursive: true });
+    writeFileSync(join(root, '.claude/skills/comb-future/SKILL.md'), '---\nname: comb-future\nmetadata:\n  generatedBy: comb@9.9.9 sha256:0123456789abcdef\n---\nfuture\n');
+    const data = JSON.parse((await runCli(['update', '--json'], root)).stdout).data;
+    expect(data.orphaned).toEqual([]);
+  });
 });

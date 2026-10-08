@@ -99,3 +99,16 @@ it('points to clarify, not archive, while any question is still open', () => {
   expect(s.artifacts.every((a) => a.state === 'done')).toBe(true);
   expect(s.next).toBe('clarify');
 });
+
+it('says when review.md has a broken frontmatter', () => {
+  const s = computeStatus(snapshot({ review: '---\nreviewed: [\n---\n# R\n' }, true), []);
+  expect(s.artifacts[2]!.state).toBe('stale');
+  expect(s.artifacts[2]!.detail).toContain('broken frontmatter');
+});
+
+it('gives the YAML error on one line, with the line number in review.md', () => {
+  const s = computeStatus(snapshot({ review: '---\nreviewed: abc\nrequirements: [a\nfoo: : bar\n---\n# R\n' }, true), []);
+  const detail = s.artifacts[2]!.detail ?? '';
+  expect(detail).not.toContain('\n');
+  expect(detail).toContain('line 4');
+});

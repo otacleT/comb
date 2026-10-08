@@ -30,6 +30,7 @@ export function registerUpdate(program: Command, ctx: CliContext): void {
         return;
       }
       const agents = project.config.agents.map((id) => AGENTS[id]!);
-      finish(ctx, envelope('update', updateAgentFiles(root, { version: VERSION, templatesDir: TEMPLATES_DIR, agents }), []), json, describeInit);
+      const describe = agents.length === 0 ? () => 'no agents configured in comb/config.yaml (agents: [])' : describeInit;
+      finish(ctx, envelope('update', updateAgentFiles(root, { version: VERSION, templatesDir: TEMPLATES_DIR, agents }), []), json, describe);
     });
 }

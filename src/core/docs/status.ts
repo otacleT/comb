@@ -46,7 +46,7 @@ export function docsStatus(
         'Move it away, or set documents.dir in comb/config.yaml to another folder'));
       return { id: o.id, path, state: 'user-owned', sourceHash: hash, recordedHash: null };
     }
-    diagnostics.push(...checkCitations(text, path, refs), ...uncitedSections(text, path));
+    diagnostics.push(...checkCitations(text, path, refs, { history: o.sources.includes('decisions') }), ...uncitedSections(text, path));
     for (const id of extractCitations(text).requirements) cited.add(id);
     if (header.hash !== hash) {
       const t = { file: path, line: 1 };

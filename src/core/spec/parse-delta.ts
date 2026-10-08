@@ -51,6 +51,7 @@ export function parseDelta(text: string, capability: string, file: string): { de
       delta.purpose = text.slice(top.contentStart, top.end).trim();
       continue;
     }
+    let afterSection = false;
     for (const h of childBlocks(blocks, top, 3)) {
       if (endsOpen(text.slice(h.start, h.end))) {
         diagnostics.push(
@@ -60,9 +61,12 @@ export function parseDelta(text: string, capability: string, file: string): { de
       }
       if (top.text.endsWith('Sections')) {
         if (!h.text.startsWith('Section:')) {
-          bad(h, 'Section: <heading>');
+          // After a section, a ### is most likely one of its subsections; before any, a section missing its prefix.
+          diagnostics.push(diag('error', 'SPEC_PARSE', `unexpected heading "${h.text}"`, { file, line: h.line },
+            afterSection ? "Write a section's own subsections one level deeper (#### …); archive writes them back as ###" : 'Use "### Section: <heading>"'));
           continue;
         }
+        afterSection = true;
         const section = toSection(text, h, h.text.replace(/^Section:\s*/, '').trim());
         (top.text === 'ADDED Sections' ? delta.addedSections : delta.modifiedSections).push(section);
         continue;

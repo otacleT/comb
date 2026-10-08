@@ -127,4 +127,24 @@ describe('applyDelta', () => {
     expect(checkMerged(ORDER_SPEC, d, hidden, 'd.md').map((x) => x.code)).toEqual(['SPEC_PARSE']);
     expect(checkMerged(ORDER_SPEC, d, applyDelta(ORDER_SPEC, d, 'd.md').text, 'd.md')).toEqual([]);
   });
+
+  it('adds to the retired list without losing comments or wrapping it', () => {
+    const many = Array.from({ length: 12 }, (_, i) => `REQ-ORDER-${String(100 + i)}`).join(', ');
+    const spec = ORDER_SPEC.replace('prefix: ORDER\nretired: [REQ-ORDER-010]', `prefix: ORDER # the order prefix\nretired: [${many}] # never reuse these`);
+    const { text } = applyDelta(spec, delta(REMOVE_PAYMENT), 'd.md');
+    const frontmatter = text.slice(0, text.indexOf('\n---\n', 4));
+    expect(frontmatter).toContain('# the order prefix');
+    expect(frontmatter).toContain('# never reuse these');
+    expect(frontmatter.split('\n').filter((l) => l.includes('REQ-ORDER-'))).toHaveLength(1);
+    expect(parseSpec(text, 'order-lifecycle', 's.md').capability.retired.at(-1)).toBe('REQ-ORDER-002');
+  });
+
+  it('modifies a section with subsections written one level deeper in the delta', () => {
+    const spec = ORDER_SPEC.replace('## Requirements', '## Fees\nIntro.\n\n### Domestic\n500 yen.\n\n### International\n900 yen.\n\n## Requirements');
+    const d = delta('## MODIFIED Sections\n\n### Section: Fees\nIntro.\n\n#### Domestic\n600 yen.\n\n#### International\n900 yen.\n');
+    const once = applyDelta(spec, d, 'd.md');
+    expect(once.diagnostics).toEqual([]);
+    expect(once.text).toContain('## Fees\nIntro.\n\n### Domestic\n600 yen.\n\n### International\n900 yen.\n');
+    expect(applyDelta(once.text, d, 'd.md').skipped).toEqual(['Section: Fees']);
+  });
 });
