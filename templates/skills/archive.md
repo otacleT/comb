@@ -10,3 +10,4 @@ description: Archive a finished Comb change, merging its delta into the specs an
 3. If it is blocked (`ARCHIVE_BLOCKED`), tell the user each reason and its fix. Pass `--yes`, `--allow-dropped-scenarios` or `--allow-base-drift` only when the user explicitly agrees to that specific override, then run the command again.
 4. For any other error, report it with its fix and stop. Do not edit files to force the archive through.
 5. On success, tell the user what changed: the requirements added, modified and removed per capability, the decision ids that were assigned (local → permanent), and where the change was archived.
+6. Run `comb docs --json`. If any document is `stale`, tell the user that the product docs are out of date and suggest /comb:docs.

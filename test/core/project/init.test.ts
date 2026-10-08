@@ -24,6 +24,8 @@ describe('initProject', () => {
       '.claude/commands/comb/archive.md',
       '.claude/skills/comb-clarify/SKILL.md',
       '.claude/commands/comb/clarify.md',
+      '.claude/skills/comb-docs/SKILL.md',
+      '.claude/commands/comb/docs.md',
       '.claude/skills/comb-explore/SKILL.md',
       '.claude/commands/comb/explore.md',
       '.claude/skills/comb-propose/SKILL.md',

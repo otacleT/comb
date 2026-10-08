@@ -5,7 +5,7 @@ import { TEMPLATES_DIR } from '../../src/templates-dir.js';
 
 describe('claude-code adapter', () => {
   it('lists workflows from templates/skills', () => {
-    expect(listWorkflows(TEMPLATES_DIR)).toEqual(['apply', 'archive', 'clarify', 'explore', 'propose', 'review']);
+    expect(listWorkflows(TEMPLATES_DIR)).toEqual(['apply', 'archive', 'clarify', 'docs', 'explore', 'propose', 'review']);
   });
 
   it('generates a skill and a slash command per workflow', () => {
@@ -17,6 +17,8 @@ describe('claude-code adapter', () => {
       '.claude/commands/comb/archive.md',
       '.claude/skills/comb-clarify/SKILL.md',
       '.claude/commands/comb/clarify.md',
+      '.claude/skills/comb-docs/SKILL.md',
+      '.claude/commands/comb/docs.md',
       '.claude/skills/comb-explore/SKILL.md',
       '.claude/commands/comb/explore.md',
       '.claude/skills/comb-propose/SKILL.md',
@@ -69,5 +71,15 @@ describe('claude-code adapter', () => {
     const archive = files.find((f) => f.path === '.claude/commands/comb/archive.md')!.content;
     expect(archive).toContain('comb archive <id> --json');
     expect(archive).toContain('only when the user explicitly agrees');
+  });
+
+  it('generates a docs command that drives the CLI, and an archive command that points to it', () => {
+    const files = claudeCode.files(TEMPLATES_DIR, '9.9.9');
+    const docs = files.find((f) => f.path === '.claude/commands/comb/docs.md')!.content;
+    expect(docs).toContain('comb instructions docs');
+    expect(docs).toContain('comb docs stamp');
+    const archive = files.find((f) => f.path === '.claude/commands/comb/archive.md')!.content;
+    expect(archive).toContain('comb docs --json');
+    expect(archive).toContain('/comb:docs');
   });
 });
