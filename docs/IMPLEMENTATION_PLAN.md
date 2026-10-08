@@ -29,7 +29,7 @@
 
 | # | 内容 | 根拠 |
 |---|---|---|
-| F4 | 正本の節（Conventions、States など）を引用する形式を足す（例：`subscription-billing#Conventions`）。`comb docs` は、その節が正本にあるかを検査する | E7：Conventions に書かれた内容（PSP がホストする入力欄など）を、エージェントが近い要件の ID で代用して引用した。内容は正しいが、引用先がずれる |
+| F4（完了：2026-10-08。E7 の再確認で、Conventions の内容は節で引用された） | 正本の節（Conventions、States など）を引用する形式を足す（例：`subscription-billing#Conventions`）。`comb docs` は、その節が正本にあるかを検査する | E7：Conventions に書かれた内容（PSP がホストする入力欄など）を、エージェントが近い要件の ID で代用して引用した。内容は正しいが、引用先がずれる |
 
 ## M1：Walking skeleton（詳細計画あり）
 

@@ -117,5 +117,5 @@ export function uncitedSections(text: string, file: string, sections: ReadonlyMa
   return blocks
     .filter((b) => !gaps.some((g) => b.start >= g.start && b.start < g.end))
     .filter((b) => !citesAnything(extractCitations(text.slice(b.start, b.end), sections)))
-    .map((b) => diag('warning', 'DOC_UNCITED_SECTION', `"${b.text}" cites nothing`, { file, line: b.line }, 'Cite the requirements or decisions it comes from, or move it under ## Gaps'));
+    .map((b) => diag('warning', 'DOC_UNCITED_SECTION', `"${b.text}" cites nothing`, { file, line: b.line }, 'Cite the requirements, spec sections or decisions it comes from, or move it under ## Gaps'));
 }

@@ -25,6 +25,7 @@ describe('loadProfile', () => {
     expect(profile!.skill).toContain('#Q-');
     expect(profile!.skill).toContain('config:context');
     expect(profile!.skill).toContain('<capability>#<Section heading>');
+    expect(profile!.skill).toContain('without Markdown formatting');
   });
 
   it('rejects a folder that is not a valid profile', () => {
