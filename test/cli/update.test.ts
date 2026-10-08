@@ -85,4 +85,12 @@ describe('comb update', () => {
     expect(data.orphaned).toEqual(['.claude/skills/comb-old/SKILL.md']);
     expect(read(root, '.claude/skills/comb-old/SKILL.md')).toContain('old');
   });
+
+  it('does not call a skill from a newer comb orphaned', async () => {
+    const root = olderProject();
+    mkdirSync(join(root, '.claude/skills/comb-future'), { recursive: true });
+    writeFileSync(join(root, '.claude/skills/comb-future/SKILL.md'), '---\nname: comb-future\nmetadata:\n  generatedBy: comb@9.9.9 sha256:0123456789abcdef\n---\nfuture\n');
+    const data = JSON.parse((await runCli(['update', '--json'], root)).stdout).data;
+    expect(data.orphaned).toEqual([]);
+  });
 });

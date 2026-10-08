@@ -8,6 +8,9 @@ export interface RefContext {
   questions: ReadonlySet<string>;
 }
 
+/** "none: <reason>", also with a full-width colon or the reason in parentheses. */
+const NONE_WITH_REASON = /^none\s*(?:[:：]\s*\S|[(（])/i;
+
 export function validateQuestions(questions: Question[], file: string, ctx: RefContext): Diagnostic[] {
   const out: Diagnostic[] = [];
   for (const q of questions) {
@@ -19,10 +22,10 @@ export function validateQuestions(questions: Question[], file: string, ctx: RefC
     if (!q.decision) {
       out.push(diag('error', 'QUESTION_UNRESOLVED_LINK', `${q.id} is answered but has no Decision`, t,
         'Add "- **Decision:** D-<n>" or "- **Decision:** none: <reason>"'));
-    } else if (/^none\b/i.test(q.decision) && !/^none\s*:\s*\S/i.test(q.decision)) {
+    } else if (/^none\b/i.test(q.decision) && !NONE_WITH_REASON.test(q.decision)) {
       out.push(diag('error', 'QUESTION_UNRESOLVED_LINK', `${q.id} is answered with no decision but gives no reason`, t,
         'Write "- **Decision:** none: <reason>"'));
-    } else if (!/^none\s*:/i.test(q.decision) && !ctx.localDecisions.has(q.decision) && !ctx.canonicalDecisions.has(q.decision)) {
+    } else if (!/^none\b/i.test(q.decision) && !ctx.localDecisions.has(q.decision) && !ctx.canonicalDecisions.has(q.decision)) {
       out.push(diag('error', 'REF_UNKNOWN_DECISION', `${q.id} points to unknown decision ${q.decision}`, t));
     }
   }

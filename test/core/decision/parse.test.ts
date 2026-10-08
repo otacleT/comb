@@ -144,4 +144,10 @@ describe('loosely written values', () => {
     expect(loose.diagnostics).toEqual([]);
     expect([loose.decisions[0]!.rule, loose.decisions[0]!.why]).toEqual(['rule', 'because']);
   });
+
+  it('reads a reason written as a bullet', () => {
+    const d = parseDecisions('## D-1: x\n- **Date:** 2026-10-08\n- **Why:** because\n\nrule\n', 'd.md');
+    expect(d.diagnostics).toEqual([]);
+    expect([d.decisions[0]!.rule, d.decisions[0]!.why]).toEqual(['rule', 'because']);
+  });
 });

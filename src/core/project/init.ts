@@ -84,6 +84,11 @@ export function updateAgentFiles(root: string, opts: AgentOptions): InitResult {
   const current = new Set(opts.agents.flatMap((a) => a.files(opts.templatesDir, opts.version).map((f) => f.path)));
   result.orphaned = opts.agents
     .flatMap((a) => a.existing(root))
-    .filter((p) => !current.has(p) && readFileSync(join(root, p), 'utf8').includes(GENERATED_MARKER));
+    .filter((p) => {
+      if (current.has(p)) return false;
+      const content = readFileSync(join(root, p), 'utf8');
+      // A newer comb's file is not ours to call orphaned (DESIGN §8: an older comb never downgrades newer files).
+      return content.includes(GENERATED_MARKER) && !generatedByNewer(content, opts.version);
+    });
   return result;
 }

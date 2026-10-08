@@ -150,7 +150,7 @@ export function parseDecisions(text: string, file: string): { decisions: Decisio
     const WHY_RE = /^\*\*Why(?::\*\*|\*\*\s*:)\s*/m;
     const whyAt = prose.search(WHY_RE);
     const rule = (whyAt >= 0 ? prose.slice(0, whyAt) : prose).trim();
-    const why = whyAt >= 0 ? prose.slice(whyAt).replace(WHY_RE, '').trim() : '';
+    const why = whyAt >= 0 ? prose.slice(whyAt).replace(WHY_RE, '').trim() : (fields.get('why') ?? '');
     const t = { file, line: b.line, id };
     if (seen.has(id)) diagnostics.push(diag('error', 'SPEC_PARSE', `duplicate decision ${id}`, t));
     seen.add(id);

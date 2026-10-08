@@ -6,6 +6,13 @@ export interface Frontmatter {
   error: string | null;
 }
 
+/** The YAML error's first line, with its line number counted in the file (the YAML starts on line 2). */
+function yamlError(e: unknown): string {
+  const message = ((e as Error).message.split('\n')[0] ?? '').replace(/ at line \d+, column \d+:?$/, '');
+  const pos = (e as { linePos?: { line: number; col: number }[] }).linePos?.[0];
+  return pos ? `${message} (line ${pos.line + 1}, column ${pos.col})` : message;
+}
+
 export function splitFrontmatter(text: string): Frontmatter {
   if (!text.startsWith('---\n')) return { data: {}, bodyOffset: 0, error: null };
   const closing = /^---[ \t]*$/gm;
@@ -22,6 +29,6 @@ export function splitFrontmatter(text: string): Frontmatter {
     }
     return { data: parsed as Record<string, unknown>, bodyOffset, error: null };
   } catch (e) {
-    return { data: {}, bodyOffset, error: (e as Error).message };
+    return { data: {}, bodyOffset, error: yamlError(e) };
   }
 }

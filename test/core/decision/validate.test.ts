@@ -91,5 +91,8 @@ describe('decision values written loosely', () => {
     expect(run('**D-1**')).toEqual([]);
     expect(run('none: covered by REQ-ORDER-002')).toEqual([]);
     expect(run('none')).toEqual(['QUESTION_UNRESOLVED_LINK']);
+    expect(run('none：REQ-ORDER-002 で決まっている')).toEqual([]);
+    expect(run('none (covered by REQ-ORDER-002)')).toEqual([]);
+    expect(run('none（REQ-ORDER-002 で決まっている）')).toEqual([]);
   });
 });

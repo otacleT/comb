@@ -105,3 +105,10 @@ it('says when review.md has a broken frontmatter', () => {
   expect(s.artifacts[2]!.state).toBe('stale');
   expect(s.artifacts[2]!.detail).toContain('broken frontmatter');
 });
+
+it('gives the YAML error on one line, with the line number in review.md', () => {
+  const s = computeStatus(snapshot({ review: '---\nreviewed: abc\nrequirements: [a\nfoo: : bar\n---\n# R\n' }, true), []);
+  const detail = s.artifacts[2]!.detail ?? '';
+  expect(detail).not.toContain('\n');
+  expect(detail).toContain('line 4');
+});
