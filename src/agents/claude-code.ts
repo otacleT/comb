@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { splitFrontmatter } from '../core/markdown/frontmatter.js';
 import { normalizeText } from '../core/markdown/text.js';
@@ -55,15 +55,5 @@ export const claudeCode: AgentAdapter = {
         { path: `.claude/commands/comb/${wf}.md`, content: stampGenerated(command) },
       ];
     });
-  },
-  existing(root: string): string[] {
-    const out: string[] = [];
-    const skills = join(root, '.claude', 'skills');
-    if (existsSync(skills)) {
-      for (const d of readdirSync(skills)) if (d.startsWith('comb-') && existsSync(join(skills, d, 'SKILL.md'))) out.push(`.claude/skills/${d}/SKILL.md`);
-    }
-    const commands = join(root, '.claude', 'commands', 'comb');
-    if (existsSync(commands)) for (const f of readdirSync(commands)) if (f.endsWith('.md')) out.push(`.claude/commands/comb/${f}`);
-    return out.sort();
   },
 };

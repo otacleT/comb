@@ -1,5 +1,3 @@
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import type { Command } from 'commander';
 import { executeArchive } from '../../core/change/archive-execute.js';
 import { planArchive, type ArchivePlan, type CapabilitySummary } from '../../core/change/archive-plan.js';
@@ -14,17 +12,14 @@ export interface ArchiveSummary {
   decisions: { local: string; permanent: string }[];
   capabilities: CapabilitySummary[];
   files: string[];
-  /** False when the change folder moved but a canonical file could not be replaced (see the ARCHIVE_IO_FAILED diagnostic). */
-  complete: boolean;
 }
 
-const summarize = (plan: ArchivePlan, complete: boolean): ArchiveSummary => ({
+const summarize = (plan: ArchivePlan): ArchiveSummary => ({
   change: plan.change,
   archivedTo: plan.to,
   decisions: plan.decisions,
   capabilities: plan.capabilities,
   files: plan.writes.map((w) => (w.file.startsWith(`${plan.from}/`) ? `${plan.to}${w.file.slice(plan.from.length)}` : w.file)),
-  complete,
 });
 
 const human = (id: string) => (d: ArchiveSummary | null): string => {
@@ -34,8 +29,7 @@ const human = (id: string) => (d: ArchiveSummary | null): string => {
     return `${c.capability}${c.created ? ' (new)' : ''}: ${parts.join(' ')}`;
   });
   const decisions = d.decisions.length > 0 ? [`decisions: ${d.decisions.map((x) => `${x.local} → ${x.permanent}`).join(', ')}`] : [];
-  const headline = d.complete ? `archived ${d.change} → ${d.archivedTo}` : `archive incomplete: ${d.change} was moved to ${d.archivedTo}, but not every file was replaced (see below)`;
-  return [headline, ...caps, ...decisions].join('\n');
+  return [`archived ${d.change} → ${d.archivedTo}`, ...caps, ...decisions].join('\n');
 };
 
 export function registerArchive(program: Command, ctx: CliContext): void {
@@ -63,9 +57,6 @@ export function registerArchive(program: Command, ctx: CliContext): void {
         return;
       }
       const failed = executeArchive(root, plan);
-      // After the folder has moved, report what was done even if a later rename failed: the decision ids are needed to recover.
-      const moved = existsSync(join(root, plan.to)) && !existsSync(join(root, plan.from));
-      const data = failed.length === 0 ? summarize(plan, true) : moved ? summarize(plan, false) : null;
-      finish(ctx, envelope<ArchiveSummary | null>('archive', data, [...diagnostics, ...failed]), json, human(id));
+      finish(ctx, envelope<ArchiveSummary | null>('archive', failed.length > 0 ? null : summarize(plan), [...diagnostics, ...failed]), json, human(id));
     });
 }

@@ -92,11 +92,13 @@
 | `REF_UNKNOWN_REQ` | error | 存在しない、または削除済み（retired）の要件を引用している |
 | `REF_UNKNOWN_DECISION` | error | `comb/decisions.md` にない Decision を引用している |
 | `REF_UNKNOWN_QUESTION` | error | archive にない change、またはその change にない質問を引用している |
+| `REF_UNKNOWN_SECTION` | error | 正本の capability の、存在しない節を引用している（F4 で追加） |
 | `REF_EMPTY_CONTEXT` | error | `config:context` を引用しているが、`config.yaml` の context が空 |
 | `DOC_UNCITED_SECTION` | warning | `##` または `###` の節（見出しを含む。`## Gaps` とその配下を除く）に、引用が1つもない |
 | `DOC_UNCOVERED` | warning | 正本の要件のうち、どのドキュメントにも引用されていないものがある |
+| `DOC_CITES_SUPERSEDED` | warning | decisions を生成元に持たないドキュメントが、置き換えられた Decision を引用している（v0.1 の後に追加） |
 
-- 引用の抽出：要件 `\bREQ-[A-Z][A-Z0-9]*-\d{3,}\b`、Decision `\bD-\d{3,}\b`、質問 `\b<change-id>#Q-\d+\b`、文脈 `config:context`（節の引用として数えるが、検査する対象はない）。コードブロックの中も数える（例として ID を書く場合も、存在する ID であるべきため）。
+- 引用の抽出：要件 `\bREQ-[A-Z][A-Z0-9]*-\d{3,}\b`、Decision `\bD-\d{3,}\b`、質問 `\b<change-id>#Q-\d+\b`、文脈 `config:context`（節の引用として数えるが、検査する対象はない）、正本の節 `<capability>#<見出し>`（F4 で追加。`#` の前が正本の capability 名のときだけ引用とみなし、見出しは大文字・小文字を区別しない。パス、ファイル名、URL の一部は除く。D-023）。コードブロックの中も数える（例として ID を書く場合も、存在する ID であるべきため）。
 - 引用と節の検査は、生成物（印のあるファイル）だけが対象。
 - 1文ごとの引用の有無は判定しない。節単位の引用の有無と、全要件の網羅で縛る。
 

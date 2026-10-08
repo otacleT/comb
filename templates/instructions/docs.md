@@ -2,6 +2,6 @@ Write the product docs of this project into {{dir}}/, following data.discipline 
 
 1. Read every file in context.readFiles. They are the only sources: never add anything they do not say.
 2. Write each output whose state is "missing" or "stale" to its path, starting from its template, and replace the template's first line with the output's `marker` exactly. Leave "done" outputs alone. Never touch a "user-owned" output: tell the user instead.
-3. Cite every statement about behavior (REQ-…, D-…, <change-id>#Q-<n>, config:context). Put what a template asks for but the sources do not say under "## Gaps".
+3. Cite every statement about behavior (REQ-…, D-…, <change-id>#Q-<n>, <capability>#<Section heading>, config:context). Put what a template asks for but the sources do not say under "## Gaps".
 4. Run `comb docs stamp`, then `comb docs --json`. Fix every error in the documents you wrote (unknown citations, sections that cite nothing). A warning that no document cites a requirement means coverage is missing: add it where it belongs. If you rewrite a document after stamping, start it again with its `marker` and run `comb docs stamp` again.
 5. Tell the user which documents you wrote and list their gaps, so that the next /comb:propose can close them.

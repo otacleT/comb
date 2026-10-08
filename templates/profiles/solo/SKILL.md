@@ -6,7 +6,10 @@ These documents are a readable projection of the canonical specs (comb/specs/), 
    - a requirement: REQ-<PREFIX>-<NNN>
    - a decision: D-<NNN>
    - an open question: <change-id>#Q-<n> (the change id is the archive folder name without its date)
+   - a section of a spec (Purpose, Conventions, States…): <capability>#<Section heading>, with the heading's text as in the spec but without Markdown formatting such as backticks, for example billing#Conventions
    - the project context: config:context
+
+   Cite the requirement for what a requirement says. Cite a section only for what that section alone says, such as conventions that apply to every requirement or a table of states.
 2. Never write anything the sources do not say. When the template asks for something the sources do not cover (for example, no screen is described), list it under "## Gaps" at the end of that document, one bullet per missing piece, naming the requirement it would belong to when there is one. Gaps are the input for the next /comb:propose.
 3. Do not copy requirements. Reorganize them for the reader (by feature, by screen, by flow), summarize each rule in a sentence, and cite it.
 4. Keep it short: a reader gets the picture of a document in a few minutes. Prefer lists and small tables to long prose.

@@ -11,32 +11,66 @@ export interface DocRefs {
   context: boolean;
   /** Superseded decision → the decision that replaced it. */
   superseded: ReadonlyMap<string, string>;
+  /** Capability → the headings of its spec sections (Purpose included, Requirements not). */
+  sections: ReadonlyMap<string, readonly string[]>;
 }
 
 export interface Citations {
   requirements: string[];
   decisions: string[];
   questions: { change: string; id: string }[];
+  /** Whether it cites a spec section (`<capability>#…`, known or not). */
+  section: boolean;
+  /** `<capability>#<text>` naming a capability but none of its sections. */
+  unknownSections: { capability: string; id: string }[];
   context: boolean;
 }
 
 const REQ_RE = /\bREQ-[A-Z][A-Z0-9]*-\d{3,}\b/g;
 const DECISION_RE = /\bD-\d{3,}\b/g;
 const QUESTION_RE = /\b([a-z0-9]+(?:-[a-z0-9]+)*)#(Q-\d+)\b/g;
+/** `<name>#` not inside a path, file name or URL (so `features.md#gaps` and `https://…/a#b` are links, not citations). */
+const SECTION_RE = /(?<![\w./-])([a-z0-9]+(?:-[a-z0-9]+)*)#/g;
+/** Where an unknown section name ends, for the message. */
+const SECTION_END_RE = /^[^\s,;)、，；）。]*/;
 const CONTEXT = 'config:context';
 
-export function extractCitations(text: string): Citations {
+/**
+ * Only `<capability>#…` is a section citation, where the capability is canonical: any other `x#y` is not a citation.
+ * It is valid when the text after `#` starts with one of the capability's headings (which may contain spaces), case ignored.
+ */
+function sectionCitations(text: string, sections: ReadonlyMap<string, readonly string[]>): Pick<Citations, 'section' | 'unknownSections'> {
+  let section = false;
+  const unknown = new Map<string, { capability: string; id: string }>();
+  for (const m of text.matchAll(SECTION_RE)) {
+    const capability = m[1]!;
+    const headings = sections.get(capability);
+    if (headings === undefined) continue;
+    const rest = text.slice(m.index + m[0].length);
+    if (/^Q-\d+\b/.test(rest)) continue;
+    section = true;
+    const known = headings.some((h) => rest.slice(0, h.length).toLowerCase() === h.toLowerCase() && !/^[A-Za-z0-9_-]/.test(rest.slice(h.length)));
+    if (!known) {
+      const id = `${capability}#${SECTION_END_RE.exec(rest)![0]}`;
+      unknown.set(id, { capability, id });
+    }
+  }
+  return { section, unknownSections: [...unknown.values()] };
+}
+
+export function extractCitations(text: string, sections: ReadonlyMap<string, readonly string[]> = new Map()): Citations {
   const questions = new Map<string, { change: string; id: string }>();
   for (const m of text.matchAll(QUESTION_RE)) questions.set(`${m[1]}#${m[2]}`, { change: m[1]!, id: m[2]! });
   return {
     requirements: [...new Set(text.match(REQ_RE) ?? [])],
     decisions: [...new Set(text.match(DECISION_RE) ?? [])],
     questions: [...questions.values()],
+    ...sectionCitations(text, sections),
     context: text.includes(CONTEXT),
   };
 }
 
-const citesAnything = (c: Citations): boolean => c.requirements.length + c.decisions.length + c.questions.length > 0 || c.context;
+const citesAnything = (c: Citations): boolean => c.requirements.length + c.decisions.length + c.questions.length > 0 || c.section || c.context;
 
 const DATED_CHANGE_RE = /^\d{4}-\d{2}-\d{2}-(.+)$/;
 
@@ -45,7 +79,7 @@ const DATED_CHANGE_RE = /^\d{4}-\d{2}-\d{2}-(.+)$/;
  * that tells the decision history (`history`), citing a superseded decision is a warning.
  */
 export function checkCitations(text: string, file: string, refs: DocRefs, opts: { history?: boolean } = {}): Diagnostic[] {
-  const c = extractCitations(text);
+  const c = extractCitations(text, refs.sections);
   const fix = 'Cite an id that exists in the canonical specs and decisions, or remove the statement';
   const questionFix = (q: { change: string; id: string }): string => {
     const undated = DATED_CHANGE_RE.exec(q.change)?.[1];
@@ -59,6 +93,8 @@ export function checkCitations(text: string, file: string, refs: DocRefs, opts: 
     ...c.questions
       .filter((q) => !refs.questions.get(q.change)?.has(q.id))
       .map((q) => diag('error', 'REF_UNKNOWN_QUESTION', `${q.change}#${q.id} is not a question of an archived change`, { file, id: `${q.change}#${q.id}` }, questionFix(q))),
+    ...c.unknownSections.map((s) => diag('error', 'REF_UNKNOWN_SECTION', `${s.id} is not a section of ${s.capability}`, { file, id: s.id },
+      `Sections of ${s.capability}: ${(refs.sections.get(s.capability) ?? []).join(', ')}`)),
     ...(opts.history ? [] : c.decisions
       .filter((id) => refs.superseded.has(id))
       .map((id) => diag('warning', 'DOC_CITES_SUPERSEDED', `${id} was superseded by ${refs.superseded.get(id)}`, { file, id }, 'Cite the decision that replaced it, or rewrite the document with /comb:docs'))),
@@ -69,11 +105,11 @@ export function checkCitations(text: string, file: string, refs: DocRefs, opts: 
 }
 
 /** `##` and `###` sections (heading included) without any citation, except "## Gaps" and everything under it. */
-export function uncitedSections(text: string, file: string): Diagnostic[] {
+export function uncitedSections(text: string, file: string, sections: ReadonlyMap<string, readonly string[]> = new Map()): Diagnostic[] {
   const blocks = headingBlocks(text).filter((b) => b.depth === 2 || b.depth === 3);
   const gaps = blocks.filter((b) => b.depth === 2 && b.text === 'Gaps');
   return blocks
     .filter((b) => !gaps.some((g) => b.start >= g.start && b.start < g.end))
-    .filter((b) => !citesAnything(extractCitations(text.slice(b.start, b.end))))
-    .map((b) => diag('warning', 'DOC_UNCITED_SECTION', `"${b.text}" cites nothing`, { file, line: b.line }, 'Cite the requirements or decisions it comes from, or move it under ## Gaps'));
+    .filter((b) => !citesAnything(extractCitations(text.slice(b.start, b.end), sections)))
+    .map((b) => diag('warning', 'DOC_UNCITED_SECTION', `"${b.text}" cites nothing`, { file, line: b.line }, 'Cite the requirements, spec sections or decisions it comes from, or move it under ## Gaps'));
 }
