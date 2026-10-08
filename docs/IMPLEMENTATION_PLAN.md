@@ -19,6 +19,12 @@
 | **M3**（完了：2026-10-06） | Archive | **E5** archive、**E6** 2回目の変更 | delta の適用（テキストの範囲の差し替え）、Decision の恒久ID、archive のトランザクション、ベースのハッシュ（S1）、`list` / `show`、`instructions(apply)`、apply / archive の Skill | [2026-10-06-m3-archive.md](plans/2026-10-06-m3-archive.md) |
 | **M4**（完了：2026-10-06） | Should | — | ベンチマークの自動実行（S2）、`comb update`（S3）、パッケージ名の決定と公開の準備 | [2026-10-06-m4-should.md](plans/2026-10-06-m4-should.md) |
 
+## v0.1：Document Profiles（solo）
+
+| # | 名前 | 完了条件（体験） | 主な成果 | 設計・詳細計画 |
+|---|---|---|---|---|
+| **v0.1** | Document Profiles | **E7** ドキュメント | solo profile（product、features、screens、flows、decisions、open-questions）、`comb docs` / `comb docs stamp`、`comb instructions docs`、docs の Skill | [設計](specs/2026-10-08-document-profiles-design.md) / [計画](plans/2026-10-08-v0.1-document-profiles.md) |
+
 ## M1：Walking skeleton（詳細計画あり）
 
 **完了条件：** E1（`comb init` の後に `/comb:*` が使える）と E2（`/comb:propose` で、`validate` が通る、安定IDの付いた change ができる）。
