@@ -23,7 +23,13 @@
 
 | # | 名前 | 完了条件（体験） | 主な成果 | 設計・詳細計画 |
 |---|---|---|---|---|
-| **v0.1** | Document Profiles | **E7** ドキュメント | solo profile（product、features、screens、flows、decisions、open-questions）、`comb docs` / `comb docs stamp`、`comb instructions docs`、docs の Skill | [設計](specs/2026-10-08-document-profiles-design.md) / [計画](plans/2026-10-08-v0.1-document-profiles.md) |
+| **v0.1**（完了：2026-10-08） | Document Profiles | **E7** ドキュメント | solo profile（product、features、screens、flows、decisions、open-questions）、`comb docs` / `comb docs stamp`、`comb instructions docs`、docs の Skill | [設計](specs/2026-10-08-document-profiles-design.md) / [計画](plans/2026-10-08-v0.1-document-profiles.md) |
+
+### v0.1 の追加タスク（体験確認で見つかったもの）
+
+| # | 内容 | 根拠 |
+|---|---|---|
+| F4 | 正本の節（Conventions、States など）を引用する形式を足す（例：`subscription-billing#Conventions`）。`comb docs` は、その節が正本にあるかを検査する | E7：Conventions に書かれた内容（PSP がホストする入力欄など）を、エージェントが近い要件の ID で代用して引用した。内容は正しいが、引用先がずれる |
 
 ## M1：Walking skeleton（詳細計画あり）
 
