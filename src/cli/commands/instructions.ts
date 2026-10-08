@@ -1,5 +1,7 @@
 import type { Command } from 'commander';
 import { buildInstructions, INSTRUCTION_ARTIFACTS, type InstructionArtifact, type Instructions } from '../../core/instructions/build.js';
+import { loadDocs } from '../../core/docs/load.js';
+import { buildDocsInstructions, type DocsInstructions } from '../../core/instructions/docs.js';
 import { loadAllChanges, loadProject } from '../../core/project/load.js';
 import { TEMPLATES_DIR } from '../../templates-dir.js';
 import type { CliContext } from '../app.js';
@@ -22,18 +24,41 @@ const human = (i: Instructions): string =>
     .filter((s) => s.length > 0)
     .join('\n\n');
 
+const describeDocsInstructions = (i: DocsInstructions): string =>
+  [
+    `# docs (${i.profile}) → ${i.dir}/`,
+    i.instruction.trim(),
+    `Outputs:\n${i.outputs.map((o) => `- ${o.path} (${o.state}): ${o.audience}`).join('\n')}`,
+    `Read first:\n${i.context.readFiles.map((f) => `- ${f}`).join('\n') || '- (none)'}`,
+    i.discipline.trim(),
+  ].join('\n\n');
+
 export function registerInstructions(program: Command, ctx: CliContext): void {
   program
     .command('instructions <artifact>')
-    .description(`instructions for an artifact (${INSTRUCTION_ARTIFACTS.join(', ')})`)
-    .requiredOption('--change <id>', 'change id')
+    .description(`instructions for an artifact (${[...INSTRUCTION_ARTIFACTS, 'docs'].join(', ')})`)
+    .option('--change <id>', 'change id (every artifact except docs)')
     .option('--json', 'JSON output')
-    .action((artifact: string, opts: { change: string; json?: boolean }) => {
+    .action((artifact: string, opts: { change?: string; json?: boolean }) => {
       const json = opts.json === true;
+      if (artifact !== 'docs' && !(INSTRUCTION_ARTIFACTS as readonly string[]).includes(artifact)) {
+        usageError(ctx, 'instructions', json, 'UNKNOWN_ARTIFACT', `unknown artifact "${artifact}"`, `Use one of: ${[...INSTRUCTION_ARTIFACTS, 'docs'].join(', ')}`);
+        return;
+      }
+      // Argument errors come before looking for the project (as with commander's own checks).
+      if (artifact !== 'docs' && opts.change === undefined) {
+        usageError(ctx, 'instructions', json, 'USAGE_ERROR', `--change <id> is required for ${artifact}`, `comb instructions ${artifact} --change <id>`);
+        return;
+      }
       const root = requireRoot(ctx, 'instructions', json);
       if (!root) return;
-      if (!(INSTRUCTION_ARTIFACTS as readonly string[]).includes(artifact)) {
-        usageError(ctx, 'instructions', json, 'UNKNOWN_ARTIFACT', `unknown artifact "${artifact}"`, `Use one of: ${INSTRUCTION_ARTIFACTS.join(', ')}`);
+      if (artifact === 'docs') {
+        const { context, diagnostics } = loadDocs(root, TEMPLATES_DIR);
+        if (!context) {
+          finish(ctx, envelope('instructions', null, diagnostics), json, () => '');
+          return;
+        }
+        finish(ctx, envelope('instructions', buildDocsInstructions(context, TEMPLATES_DIR), []), json, describeDocsInstructions);
         return;
       }
       const all = loadAllChanges(root);
