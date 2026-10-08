@@ -99,3 +99,9 @@ it('points to clarify, not archive, while any question is still open', () => {
   expect(s.artifacts.every((a) => a.state === 'done')).toBe(true);
   expect(s.next).toBe('clarify');
 });
+
+it('says when review.md has a broken frontmatter', () => {
+  const s = computeStatus(snapshot({ review: '---\nreviewed: [\n---\n# R\n' }, true), []);
+  expect(s.artifacts[2]!.state).toBe('stale');
+  expect(s.artifacts[2]!.detail).toContain('broken frontmatter');
+});

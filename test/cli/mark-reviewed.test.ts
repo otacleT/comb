@@ -33,7 +33,10 @@ describe('comb mark-reviewed', () => {
     const root = makeProject({ ...files, 'comb/changes/c/review.md': '---\nlenses: [x]\n# R\n' });
     const r = await runCli(['mark-reviewed', '--change', 'c', '--json'], root);
     expect(r.code).toBe(1);
-    expect(JSON.parse(r.stdout).diagnostics[0].code).toBe('SPEC_PARSE');
+    const d = JSON.parse(r.stdout).diagnostics[0];
+    expect(d.code).toBe('SPEC_PARSE');
+    expect(d.message).toContain('unterminated frontmatter');
+    expect(d.fix).toBeDefined();
     expect(readFileSync(join(root, 'comb/changes/c/review.md'), 'utf8')).toBe('---\nlenses: [x]\n# R\n');
   });
 

@@ -113,4 +113,8 @@ describe('review lenses', () => {
   it('keeps the edge-case lens from dismissing sequences because steps are serialized', () => {
     expect(lens('edge-cases')).toContain('Serialization');
   });
+
+  it('tells the reviewer never to edit an existing question', () => {
+    expect(readFileSync(join(TEMPLATES_DIR, 'instructions', 'review.md'), 'utf8')).toContain('never edit an existing question');
+  });
 });

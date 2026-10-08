@@ -4,10 +4,12 @@ import { splitFrontmatter } from '../markdown/frontmatter.js';
 export interface ReviewStamp {
   reviewed: string | null;
   requirements: Record<string, string> | null;
+  /** The YAML error of a broken frontmatter, if any. */
+  error: string | null;
 }
 
 export function readReviewStamp(text: string | undefined): ReviewStamp {
-  if (text === undefined) return { reviewed: null, requirements: null };
+  if (text === undefined) return { reviewed: null, requirements: null, error: null };
   const fm = splitFrontmatter(text);
   const reviewed = typeof fm.data.reviewed === 'string' ? fm.data.reviewed : null;
   const raw = fm.data.requirements;
@@ -15,7 +17,7 @@ export function readReviewStamp(text: string | undefined): ReviewStamp {
     raw !== null && typeof raw === 'object' && !Array.isArray(raw) && Object.values(raw).every((v) => typeof v === 'string')
       ? (raw as Record<string, string>)
       : null;
-  return { reviewed, requirements };
+  return { reviewed, requirements, error: fm.error };
 }
 
 /** Writes `reviewed` and `requirements` into the frontmatter, keeping other keys and the body. */

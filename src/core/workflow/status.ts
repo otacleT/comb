@@ -69,7 +69,9 @@ export function computeStatus(change: ChangeSnapshot, validation: Diagnostic[]):
   const review: ArtifactStatus =
     change.files.review === undefined
       ? { id: 'review', state: 'missing' }
-      : stamp.reviewed === null
+      : stamp.error !== null
+        ? { id: 'review', state: 'stale', detail: `review.md has a broken frontmatter: ${stamp.error}` }
+        : stamp.reviewed === null
         ? { id: 'review', state: 'stale', detail: 'not marked reviewed (run comb mark-reviewed)' }
         : stamp.reviewed !== deltaHash(change)
           ? { id: 'review', state: 'stale', detail: 'the delta changed since the review' }

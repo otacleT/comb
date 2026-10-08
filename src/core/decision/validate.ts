@@ -19,6 +19,9 @@ export function validateQuestions(questions: Question[], file: string, ctx: RefC
     if (!q.decision) {
       out.push(diag('error', 'QUESTION_UNRESOLVED_LINK', `${q.id} is answered but has no Decision`, t,
         'Add "- **Decision:** D-<n>" or "- **Decision:** none: <reason>"'));
+    } else if (/^none\b/i.test(q.decision) && !/^none\s*:\s*\S/i.test(q.decision)) {
+      out.push(diag('error', 'QUESTION_UNRESOLVED_LINK', `${q.id} is answered with no decision but gives no reason`, t,
+        'Write "- **Decision:** none: <reason>"'));
     } else if (!/^none\s*:/i.test(q.decision) && !ctx.localDecisions.has(q.decision) && !ctx.canonicalDecisions.has(q.decision)) {
       out.push(diag('error', 'REF_UNKNOWN_DECISION', `${q.id} points to unknown decision ${q.decision}`, t));
     }

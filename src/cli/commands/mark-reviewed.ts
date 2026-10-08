@@ -4,7 +4,7 @@ import { diag } from '../../core/diagnostics.js';
 import { loadChange } from '../../core/project/load.js';
 import { paths, rel } from '../../core/project/paths.js';
 import { deltaHash, requirementHashes } from '../../core/workflow/hash.js';
-import { stampReview } from '../../core/workflow/review-stamp.js';
+import { readReviewStamp, stampReview } from '../../core/workflow/review-stamp.js';
 import type { CliContext } from '../app.js';
 import { envelope } from '../output.js';
 import { finish, requireRoot, usageError } from './shared.js';
@@ -33,7 +33,9 @@ export function registerMarkReviewed(program: Command, ctx: CliContext): void {
       const reviewed = deltaHash(change);
       const stamped = stampReview(change.files.review, reviewed, requirementHashes(change));
       if (stamped === null) {
-        finish(ctx, envelope('mark-reviewed', null, [diag('error', 'SPEC_PARSE', 'review.md has a broken frontmatter', { file, line: 1 })]), json, () => '');
+        const error = readReviewStamp(change.files.review).error ?? 'unreadable';
+        finish(ctx, envelope('mark-reviewed', null, [diag('error', 'SPEC_PARSE', `review.md has a broken frontmatter: ${error}`, { file, line: 1 },
+          'Fix the YAML between the --- lines at the top of review.md, then run comb mark-reviewed again')]), json, () => '');
         return;
       }
       writeFileSync(path, stamped);

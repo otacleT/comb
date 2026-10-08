@@ -117,12 +117,31 @@ describe('parseDecisions', () => {
   });
 
   it('reports a decision field written twice', () => {
-    const text = '## D-1: x\n- **From:** Q-1\n- **From:** Q-2\n\nrule\n';
+    const text = '## D-1: x\n- **Date:** 2026-10-08\n- **From:** Q-1\n- **From:** Q-2\n\nrule\n\n**Why:** w\n';
     expect(parseDecisions(text, 'd.md').diagnostics.map((d) => d.message)).toEqual(['D-1: From is written twice']);
   });
 
   it('requires the rule text', () => {
-    const { diagnostics } = parseDecisions('## D-1: x\n- **Refs:** REQ-A-001\n\n**Why:** y\n', 'd.md');
+    const { diagnostics } = parseDecisions('## D-1: x\n- **Date:** 2026-10-08\n- **Refs:** REQ-A-001\n\n**Why:** y\n', 'd.md');
     expect(diagnostics.map((d) => d.code)).toEqual(['SPEC_PARSE']);
+  });
+});
+
+describe('loosely written values', () => {
+  it('extracts requirement ids from Refs with notes, full-width parentheses, semicolons and backticks', () => {
+    expect(parseIdList('REQ-ORDER-005 (buyer cancel); `REQ-ORDER-006`、REQ-ORDER-007（購入者キャンセル）')).toEqual(['REQ-ORDER-005', 'REQ-ORDER-006', 'REQ-ORDER-007']);
+  });
+
+  it('reads From and Supersedes by their ids', () => {
+    const d = parseDecisions('## D-1: x\n- **Date:** 2026-10-08\n- **From:** Q-1, Q-2\n- **Supersedes:** D-021 (price rule)\n\nrule\n\n**Why:** w\n', 'd.md');
+    expect(d.diagnostics).toEqual([]);
+    expect([d.decisions[0]!.from, d.decisions[0]!.supersedes]).toEqual(['Q-1', 'D-021']);
+  });
+
+  it('requires a Date and a reason, and accepts **Why**:', () => {
+    expect(parseDecisions('## D-1: x\n\nrule\n', 'd.md').diagnostics.map((d) => d.message)).toEqual(['D-1: Date is missing', 'D-1: the reason (**Why:**) is missing']);
+    const loose = parseDecisions('## D-1: x\n- **Date:** 2026-10-08\n\nrule\n\n**Why**: because\n', 'd.md');
+    expect(loose.diagnostics).toEqual([]);
+    expect([loose.decisions[0]!.rule, loose.decisions[0]!.why]).toEqual(['rule', 'because']);
   });
 });
