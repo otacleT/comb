@@ -7,6 +7,8 @@ export interface DocRefs {
   decisions: ReadonlySet<string>;
   /** Change id → the question ids of its archived questions.md. */
   questions: ReadonlyMap<string, ReadonlySet<string>>;
+  /** Whether comb/config.yaml has a non-empty context (what `config:context` cites). */
+  context: boolean;
 }
 
 export interface Citations {
@@ -46,15 +48,18 @@ export function checkCitations(text: string, file: string, refs: DocRefs): Diagn
     ...c.questions
       .filter((q) => !refs.questions.get(q.change)?.has(q.id))
       .map((q) => diag('error', 'REF_UNKNOWN_QUESTION', `${q.change}#${q.id} is not a question of an archived change`, { file, id: `${q.change}#${q.id}` }, fix)),
+    ...(c.context && !refs.context
+      ? [diag('error', 'REF_EMPTY_CONTEXT', 'config:context is cited, but comb/config.yaml has no context', { file }, 'Write the context in comb/config.yaml, or cite requirements instead')]
+      : []),
   ];
 }
 
-/** `##` and `###` sections without any citation, except "## Gaps" and everything under it. */
+/** `##` and `###` sections (heading included) without any citation, except "## Gaps" and everything under it. */
 export function uncitedSections(text: string, file: string): Diagnostic[] {
   const blocks = headingBlocks(text).filter((b) => b.depth === 2 || b.depth === 3);
   const gaps = blocks.filter((b) => b.depth === 2 && b.text === 'Gaps');
   return blocks
     .filter((b) => !gaps.some((g) => b.start >= g.start && b.start < g.end))
-    .filter((b) => !citesAnything(extractCitations(text.slice(b.contentStart, b.end))))
+    .filter((b) => !citesAnything(extractCitations(text.slice(b.start, b.end))))
     .map((b) => diag('warning', 'DOC_UNCITED_SECTION', `"${b.text}" cites nothing`, { file, line: b.line }, 'Cite the requirements or decisions it comes from, or move it under ## Gaps'));
 }

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DocsContext } from '../docs/load.js';
 import type { DocSource } from '../docs/profile.js';
+import { writtenMarker } from '../docs/header.js';
 import { sourceFiles } from '../docs/sources.js';
 import type { DocState } from '../docs/status.js';
 
@@ -13,7 +14,8 @@ export interface DocsInstructions {
   instruction: string;
   /** The profile's writing discipline (its SKILL.md). */
   discipline: string;
-  outputs: { id: string; path: string; state: DocState; audience: string; sources: DocSource[]; template: string }[];
+  /** `marker` is the exact first line to write: it carries the source hash the document is written for. */
+  outputs: { id: string; path: string; state: DocState; marker: string; audience: string; sources: DocSource[]; template: string }[];
   context: { project: string; readFiles: string[] };
 }
 
@@ -33,6 +35,7 @@ export function buildDocsInstructions(docs: DocsContext, templatesDir: string): 
       id: o.id,
       path: status.outputs[i]!.path,
       state: status.outputs[i]!.state,
+      marker: writtenMarker(status.outputs[i]!.sourceHash),
       audience: o.audience,
       sources: o.sources,
       template: o.template,

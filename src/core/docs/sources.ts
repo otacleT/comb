@@ -59,5 +59,6 @@ export function docRefs(project: Project, questions: ArchivedQuestions[]): DocRe
     retired: new Set(capabilities.flatMap((c) => c.retired)),
     decisions: new Set(parseDecisions(project.decisionsText ?? '', 'comb/decisions.md').decisions.map((d) => d.id)),
     questions: byChange,
+    context: project.config.context.trim() !== '',
   };
 }

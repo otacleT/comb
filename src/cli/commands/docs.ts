@@ -25,7 +25,7 @@ const describeDocs = (s: DocsStatus): string =>
 const describeStamp = (r: StampResult): string =>
   [...r.stamped.map((p) => `stamped  ${p}`), ...r.skipped.map((s) => `skipped  ${s.path} (${s.reason})`)].join('\n');
 
-/** Records the source hash on documents the agent just wrote (bare marker, no hash). Stale, user-owned and missing ones are left alone. */
+/** Stamps documents written for the current sources (their marker carries that hash). Everything else is left alone. */
 function stamp(root: string, docs: DocsContext): StampResult {
   const result: StampResult = { stamped: [], skipped: [] };
   for (const o of docs.status.outputs) {
@@ -42,6 +42,14 @@ function stamp(root: string, docs: DocsContext): StampResult {
     }
     if (header.hash !== null) {
       result.skipped.push({ path: o.path, reason: header.hash === o.sourceHash ? 'already stamped' : 'stale: rewrite it with /comb:docs first' });
+      continue;
+    }
+    // Only a document written for the sources as they are now may be stamped; anything else would hide staleness.
+    if (header.writtenFor !== o.sourceHash) {
+      result.skipped.push({
+        path: o.path,
+        reason: header.writtenFor === null ? 'not written for the current sources: rewrite it with /comb:docs' : 'sources changed since it was written: rewrite it with /comb:docs',
+      });
       continue;
     }
     writeFileSync(file, restoreTextStyle(raw, stampDoc(normalizeText(raw), o.sourceHash)));

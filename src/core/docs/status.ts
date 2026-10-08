@@ -49,9 +49,15 @@ export function docsStatus(
     diagnostics.push(...checkCitations(text, path, refs), ...uncitedSections(text, path));
     for (const id of extractCitations(text).requirements) cited.add(id);
     if (header.hash !== hash) {
-      diagnostics.push(header.hash === null
-        ? diag('error', 'DOC_STALE', `${path} is not stamped yet`, { file: path, line: 1 }, 'Run comb docs stamp')
-        : diag('error', 'DOC_STALE', `${path} was generated from older sources`, { file: path, line: 1 }, 'Run /comb:docs'));
+      const t = { file: path, line: 1 };
+      diagnostics.push(
+        header.hash !== null
+          ? diag('error', 'DOC_STALE', `${path} was generated from older sources`, t, 'Run /comb:docs')
+          : header.writtenFor === hash
+            ? diag('error', 'DOC_STALE', `${path} is not stamped yet`, t, 'Run comb docs stamp')
+            : diag('error', 'DOC_STALE', `${path} was not written from the current sources`, t,
+                'Rewrite it with /comb:docs, starting from the marker that comb instructions docs gives'),
+      );
       return { id: o.id, path, state: 'stale', sourceHash: hash, recordedHash: header.hash };
     }
     return { id: o.id, path, state: 'done', sourceHash: hash, recordedHash: header.hash };

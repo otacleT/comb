@@ -449,6 +449,7 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | `ARCHIVE_IO_FAILED` | 1 | archive 中にファイルの読み書きが失敗した。移動の前なら何も変わらない。移動の後なら、まだ置き換えていないファイルと、残っている一時ファイルを示す |
 | `ID_NOT_FOUND` | 2 | `comb show` に指定した ID の要件、Decision、change が見つからない |
 | `DOC_MISSING` / `DOC_STALE` / `DOC_USER_OWNED` | 1 | `comb docs`：ドキュメントがない／生成元が変わった（または stamp 前）／書き出し先に印のないファイルがある |
+| `REF_EMPTY_CONTEXT` | 1 | `comb docs`：`config:context` を引用しているが、config の context が空 |
 | `DOC_UNCITED_SECTION` / `DOC_UNCOVERED` | 0（warning） | `comb docs`：引用のない節がある／どのドキュメントにも引用されない要件がある |
 
 `instructions` の `data` は次の形。
