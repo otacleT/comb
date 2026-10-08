@@ -135,3 +135,19 @@ export const loadAllChanges = (root: string): ChangeSnapshot[] =>
     .filter((c): c is ChangeSnapshot => c !== null);
 
 export const listArchivedIds = (root: string): string[] => subdirs(paths.archiveDir(root));
+
+export interface ArchivedQuestions {
+  /** The change id: the archive folder name without its YYYY-MM-DD- date. */
+  change: string;
+  folder: string;
+  file: string;
+  text: string;
+}
+
+/** questions.md of every archived change (the source of the open-questions document). */
+export function loadArchivedQuestions(root: string): ArchivedQuestions[] {
+  return listArchivedIds(root).flatMap((folder) => {
+    const p = join(paths.archiveDir(root), folder, 'questions.md');
+    return existsSync(p) ? [{ change: folder.replace(/^\d{4}-\d{2}-\d{2}-/, ''), folder, file: rel(root, p), text: readText(p) }] : [];
+  });
+}
