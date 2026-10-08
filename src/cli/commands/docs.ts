@@ -30,8 +30,12 @@ function stamp(root: string, docs: DocsContext): StampResult {
   const result: StampResult = { stamped: [], skipped: [] };
   for (const o of docs.status.outputs) {
     const file = join(root, o.path);
-    if (!existsSync(file)) {
+    if (o.state === 'missing' || !existsSync(file)) {
       result.skipped.push({ path: o.path, reason: 'missing' });
+      continue;
+    }
+    if (o.state === 'user-owned') {
+      result.skipped.push({ path: o.path, reason: 'user-owned' });
       continue;
     }
     const raw = readFileSync(file, 'utf8');

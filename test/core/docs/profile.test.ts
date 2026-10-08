@@ -39,4 +39,19 @@ describe('loadProfile', () => {
     for (const files of cases) expect(loadProfile(makeProject(files)).diagnostics.map((d) => d.code)).toEqual(['CONFIG_INVALID']);
     expect(loadProfile(makeProject({ 'profile.yaml': ok, 'SKILL.md': 's', 't.md': 't' })).diagnostics).toEqual([]);
   });
+
+  it('asks only for citation forms that exist', () => {
+    const { profile } = loadProfile(join(TEMPLATES_DIR, 'profiles', 'solo'));
+    const template = (id: string) => profile!.outputs.find((o) => o.id === id)!.template;
+    expect(template('product')).toContain('the requirements of each capability');
+    expect(template('flows')).toContain('the requirements that define each transition');
+  });
+
+  it('rejects duplicate outputs and paths that leave their folders', () => {
+    const out = (id: string, path: string, template = 't.md') => `  - id: ${id}\n    path: ${path}\n    template: ${template}\n    audience: me\n    sources: [specs]\n`;
+    const head = 'id: x\ntype: comb.document-profile\nversion: 1\noutputs:\n';
+    for (const outputs of [out('a', 'a.md') + out('a', 'b.md'), out('a', 'a.md') + out('b', 'a.md'), out('a', '../a.md'), out('a', '/tmp/a.md'), out('a', 'a.md', '../t.md')]) {
+      expect(loadProfile(makeProject({ 'profile.yaml': head + outputs, 'SKILL.md': 's', 't.md': 't' })).diagnostics.map((d) => d.code), outputs).toEqual(['CONFIG_INVALID']);
+    }
+  });
 });

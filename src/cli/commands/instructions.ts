@@ -48,6 +48,10 @@ export function registerInstructions(program: Command, ctx: CliContext): void {
         return;
       }
       // Argument errors come before looking for the project (as with commander's own checks).
+      if (artifact === 'docs' && opts.change !== undefined) {
+        usageError(ctx, 'instructions', json, 'USAGE_ERROR', 'docs is not tied to a change: drop --change', 'comb instructions docs');
+        return;
+      }
       if (artifact !== 'docs' && opts.change === undefined) {
         usageError(ctx, 'instructions', json, 'USAGE_ERROR', `--change <id> is required for ${artifact}`, `comb instructions ${artifact} --change <id>`);
         return;

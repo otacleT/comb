@@ -304,9 +304,9 @@ type Decision    = { id: string; title: string; date: string; refs: string[]; fr
 | `REMOVED_NO_REASON` | error | REMOVED に Reason がない |
 | `SCENARIO_DROPPED` | warning | MODIFIED で、既存のシナリオ名が消えている |
 | `SCENARIO_CONTENT_DROPPED` | warning | MODIFIED で、既存のシナリオの後ろにあった注記や例（手順以外の行）が消えている |
-| `REF_UNKNOWN_REQ` | error | Question / Decision の Refs に存在しない要件がある |
-| `REF_UNKNOWN_DECISION` | error | 本文や Supersedes に存在しない Decision がある |
-| `REF_UNKNOWN_QUESTION` | error | Decision の From に存在しない質問がある |
+| `REF_UNKNOWN_REQ` | error | Question / Decision の Refs、または生成したドキュメントの引用に、存在しない要件がある |
+| `REF_UNKNOWN_DECISION` | error | 本文や Supersedes、または生成したドキュメントの引用に、存在しない Decision がある |
+| `REF_UNKNOWN_QUESTION` | error | Decision の From に存在しない質問がある。ドキュメントでは、引用した `<change-id>#Q-n` が archive 済みの change にない（日付付きのフォルダ名で書いたときは、fix が日付なしの形を示す） |
 | `QUESTION_UNRESOLVED_LINK` | error | answered なのに `Decision:` がない（`D-n` か `none: <理由>` が必要） |
 | `BASE_DRIFT` | warning | 提案時から正本の対象要件が変わっている（S1） |
 
@@ -404,6 +404,7 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | `comb new change <id>` | change のフォルダと `.comb.yaml` を作る | M3 |
 | `comb status [--change <id>] [--json]` | 成果物の状態、ゲート、next、未決質問の件数、ベースのずれ | M7 |
 | `comb instructions <artifact> --change <id> [--json]` | テンプレート、ルール、文脈、関連する正本の抜粋、次に使える ID、書き出し先のパス | M7 |
+| `comb instructions docs [--json]` | ドキュメントを書くための指示、profile の書き出し先とテンプレート、読むファイル、引用の書式（change に結びつかないので `--change` は受け付けない） | v0.1 |
 | `comb validate [--change <id>] [--json]` | 3〜4 章の規則で検査する | M8 |
 | `comb mark-reviewed --change <id>` | `review.md` の frontmatter に、delta のハッシュと要件ごとのハッシュを書く | M5 |
 | `comb archive <id> [--yes] [--allow-dropped-scenarios] [--allow-base-drift]` | 5.3 の手順 | M9 |
@@ -453,6 +454,7 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | `DOC_MISSING` / `DOC_STALE` / `DOC_USER_OWNED` | 1 | `comb docs`：ドキュメントがない／生成元が変わった（または stamp 前）／書き出し先に印のないファイルがある |
 | `REF_EMPTY_CONTEXT` | 1 | `comb docs`：`config:context` を引用しているが、config の context が空 |
 | `DOC_UNCITED_SECTION` / `DOC_UNCOVERED` | 0（warning） | `comb docs`：引用のない節がある／どのドキュメントにも引用されない要件がある |
+| `DOC_CITES_SUPERSEDED` | 0（warning） | `comb docs`：decisions を生成元に持たないドキュメントが、置き換えられた Decision を引用している |
 
 `instructions` の `data` は次の形。
 

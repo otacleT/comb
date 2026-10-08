@@ -1,3 +1,4 @@
+import { existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { hasErrors, type Diagnostic } from '../diagnostics.js';
 import { loadArchivedQuestions, loadProject, readIfExists, type Project } from '../project/load.js';
@@ -22,7 +23,9 @@ export function loadDocs(root: string, templatesDir: string): { context: DocsCon
   const questions = loadArchivedQuestions(root);
   const inputs = docInputs(project, questions);
   const dir = project.config.documents.dir;
-  const texts = new Map(loaded.profile.outputs.map((o) => [`${dir}/${o.path}`, readIfExists(join(root, dir, o.path))] as const));
+  // A folder at an output path counts as the user's (empty, unmarked), so it is reported instead of crashing the read.
+  const read = (p: string): string | null => (existsSync(p) && statSync(p).isDirectory() ? '' : readIfExists(p));
+  const texts = new Map(loaded.profile.outputs.map((o) => [`${dir}/${o.path}`, read(join(root, dir, o.path))] as const));
   const { status, diagnostics } = docsStatus(loaded.profile, dir, inputs, docRefs(project, questions), texts);
   return { context: { project, profile: loaded.profile, inputs, status, diagnostics }, diagnostics };
 }

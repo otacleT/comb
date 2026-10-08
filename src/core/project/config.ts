@@ -34,7 +34,7 @@ export const DOCUMENT_PROFILES = ['solo'];
 /** A folder inside the project and outside comb/ (documents must never land among the canonical files). */
 const isDocsDir = (dir: string): boolean => {
   const parts = dir.split(/[\\/]+/).filter((p) => p !== '' && p !== '.');
-  return parts.length > 0 && !isAbsolute(dir) && !parts.includes('..') && parts[0] !== 'comb';
+  return parts.length > 0 && !isAbsolute(dir) && !parts.includes('..') && parts[0]!.toLowerCase() !== 'comb';
 };
 
 export function parseConfig(text: string, file: string): { config: CombConfig; diagnostics: Diagnostic[] } {

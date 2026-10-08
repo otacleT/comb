@@ -32,7 +32,7 @@ v0 の目的は1つ。
 
 | 時期の目安 | 機能 |
 |---|---|
-| v0.1 | ドキュメント生成：solo profile を1つ（正本からの投影、生成物のヘッダとハッシュ、`comb docs --check`） |
+| v0.1 | ドキュメント生成：solo profile を1つ（正本からの投影、生成物のヘッダとハッシュ、`comb docs` と `comb docs stamp`） |
 | v0.2 | Document Profile の拡張（client-work、ユーザー定義の profile、宣言的な契約） |
 | v0.2 | Codex / Cursor などへの Skill 配布アダプタ |
 | v0.x | Source（会議メモなどの資料の登録と、引用の照合） |

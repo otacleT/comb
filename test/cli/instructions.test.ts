@@ -66,6 +66,12 @@ describe('comb instructions docs', () => {
     expect(r.code).toBe(2);
     expect(JSON.parse(r.stdout).diagnostics[0].code).toBe('USAGE_ERROR');
   });
+
+  it('rejects --change for docs', async () => {
+    const r = await runCli(['instructions', 'docs', '--change', 'x', '--json'], root);
+    expect(r.code).toBe(2);
+    expect(JSON.parse(r.stdout).diagnostics[0].code).toBe('USAGE_ERROR');
+  });
 });
 
 describe('human-readable instructions', () => {
