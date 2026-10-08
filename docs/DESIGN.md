@@ -453,6 +453,7 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | `ID_NOT_FOUND` | 2 | `comb show` に指定した ID の要件、Decision、change が見つからない |
 | `DOC_MISSING` / `DOC_STALE` / `DOC_USER_OWNED` | 1 | `comb docs`：ドキュメントがない／生成元が変わった（または stamp 前）／書き出し先に印のないファイルがある |
 | `REF_EMPTY_CONTEXT` | 1 | `comb docs`：`config:context` を引用しているが、config の context が空 |
+| `REF_UNKNOWN_SECTION` | 1 | `comb docs`：`<capability>#<見出し>` の見出しが、その capability の正本の節（Purpose を含み、Requirements を除く）にない。fix に節の一覧を示す |
 | `DOC_UNCITED_SECTION` / `DOC_UNCOVERED` | 0（warning） | `comb docs`：引用のない節がある／どのドキュメントにも引用されない要件がある |
 | `DOC_CITES_SUPERSEDED` | 0（warning） | `comb docs`：decisions を生成元に持たないドキュメントが、置き換えられた Decision を引用している |
 
@@ -518,7 +519,7 @@ bench/                 # S2：レビューの再現率を測るベンチマー�
 v0.1 の設計は [specs/2026-10-08-document-profiles-design.md](specs/2026-10-08-document-profiles-design.md) を正とする。要点は次のとおり。
 
 - 組み込みの solo profile は、正本（specs、decisions、archive 済みの質問）と config の context から、6本のドキュメント（product、features、screens、flows、decisions、open-questions）を作る。作業中の change は含めない。
-- ドキュメントはエージェントが `/comb:docs` で書き、すべての記述に引用（`REQ-…`、`D-NNN`、`<change-id>#Q-n`、`config:context`）を付ける。CLI は `comb docs` で、引用、節ごとの引用の有無、要件の網羅、生成元ハッシュによる古さを検査する（D-022）。
+- ドキュメントはエージェントが `/comb:docs` で書き、すべての記述に引用（`REQ-…`、`D-NNN`、`<change-id>#Q-n`、正本の節 `<capability>#<見出し>`、`config:context`）を付ける。CLI は `comb docs` で、引用、節ごとの引用の有無、要件の網羅、生成元ハッシュによる古さを検査する（D-022）。
 - profile は宣言的なフォルダ（`profile.yaml`、`SKILL.md`、`templates/`）。v0.2 でユーザー定義の profile と client-work を足す。
 
 ### 9.2 形式検証（検証マイルストーン）

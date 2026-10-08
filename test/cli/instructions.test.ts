@@ -58,6 +58,7 @@ describe('comb instructions docs', () => {
       'comb/changes/archive/2026-10-06-tighten-payment/questions.md',
     ]);
     expect(d.instruction).toContain('docs/');
+    expect(d.instruction).toContain('<capability>#<Section heading>');
     expect(d.instruction).toContain('comb docs stamp');
   });
 

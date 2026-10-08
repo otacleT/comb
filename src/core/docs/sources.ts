@@ -45,7 +45,7 @@ export function sourceHash(sources: readonly DocSource[], inputs: DocInputs): st
   return `sha256:${createHash('sha256').update(parts.join('\n\n')).digest('hex').slice(0, 16)}`;
 }
 
-/** The ids documents may cite: canonical requirements (and retired ones, to name them), decisions and archived questions. */
+/** What documents may cite: canonical requirements (and retired ones, to name them), spec sections, decisions and archived questions. */
 export function docRefs(project: Project, questions: ArchivedQuestions[]): DocRefs {
   const capabilities = [...project.specs.values()].map((s) => s.capability);
   const decisions = parseDecisions(project.decisionsText ?? '', 'comb/decisions.md').decisions;
@@ -62,5 +62,6 @@ export function docRefs(project: Project, questions: ArchivedQuestions[]): DocRe
     questions: byChange,
     context: project.config.context.trim() !== '',
     superseded: new Map(decisions.filter((d) => d.supersededBy !== null).map((d) => [d.id, d.supersededBy as string])),
+    sections: new Map([...project.specs.entries()].map(([name, s]) => [name, s.capability.sections.map((x) => x.heading)])),
   };
 }

@@ -24,6 +24,7 @@ describe('loadProfile', () => {
     }
     expect(profile!.skill).toContain('#Q-');
     expect(profile!.skill).toContain('config:context');
+    expect(profile!.skill).toContain('<capability>#<Section heading>');
   });
 
   it('rejects a folder that is not a valid profile', () => {
@@ -43,8 +44,8 @@ describe('loadProfile', () => {
   it('asks only for citation forms that exist', () => {
     const { profile } = loadProfile(join(TEMPLATES_DIR, 'profiles', 'solo'));
     const template = (id: string) => profile!.outputs.find((o) => o.id === id)!.template;
-    expect(template('product')).toContain('the requirements of each capability');
-    expect(template('flows')).toContain('the requirements that define each transition');
+    expect(template('product')).toContain('<capability>#Purpose');
+    expect(template('flows')).toContain('<capability>#States');
   });
 
   it('rejects duplicate outputs and paths that leave their folders', () => {

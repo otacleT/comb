@@ -5,7 +5,7 @@
 
 ## <Flow>
 
-<The journey as numbered steps (who does what, what the product does in response), each step cited. Add the states the flow moves through, citing the requirements that define each transition.>
+<The journey as numbered steps (who does what, what the product does in response), each step cited. Add the states the flow moves through, citing the section that lists them (for example <capability>#States) or the requirements that define each transition.>
 
 ## Gaps
 

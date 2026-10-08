@@ -29,7 +29,7 @@ comb init --language en          # or ja
 
 ## Product docs
 
-`/comb:docs` writes six documents from the archived specs and decisions: product, features, screens, flows, decisions and open questions. Every statement cites where it comes from (`REQ-…`, `D-NNN`, `<change-id>#Q-n` or `config:context`). `comb docs` checks the citations and which requirements are covered, and reports a document as stale once the specs it was written from change; run `/comb:docs` again to refresh it. The documents go to `docs/` unless `comb/config.yaml` says otherwise:
+`/comb:docs` writes six documents from the archived specs and decisions: product, features, screens, flows, decisions and open questions. Every statement cites where it comes from (`REQ-…`, `D-NNN`, `<change-id>#Q-n`, a spec section such as `billing#Conventions`, or `config:context`). `comb docs` checks the citations and which requirements are covered, and reports a document as stale once the specs it was written from change; run `/comb:docs` again to refresh it. The documents go to `docs/` unless `comb/config.yaml` says otherwise:
 
 ```yaml
 documents:
