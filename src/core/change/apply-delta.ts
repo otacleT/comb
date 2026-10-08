@@ -1,4 +1,4 @@
-import { isSeq, parseDocument } from 'yaml';
+import { isScalar, isSeq, parseDocument } from 'yaml';
 import { diag, type Diagnostic } from '../diagnostics.js';
 import { endsOpen, headingBlocks, type HeadingBlock } from '../markdown/blocks.js';
 import { splitFrontmatter } from '../markdown/frontmatter.js';
@@ -39,20 +39,33 @@ export function withRetired(text: string, ids: string[]): string {
   const fm = splitFrontmatter(text);
   if (fm.bodyOffset === 0) return `---\nretired: [ ${ids.join(', ')} ]\n---\n${text}`;
   const doc = parseDocument(text.slice(4, text.lastIndexOf('---', fm.bodyOffset - 1)));
-  const data = (doc.toJS() ?? {}) as Record<string, unknown>;
-  const list = Array.isArray(data.retired) ? data.retired.filter((x): x is string => typeof x === 'string') : [];
-  for (const id of ids) if (!list.includes(id)) list.push(id);
-  const node = doc.createNode(list);
-  if (isSeq(node)) node.flow = true;
-  doc.set('retired', node);
-  return `---\n${doc.toString()}---\n${text.slice(fm.bodyOffset)}`;
+  const existing = doc.get('retired', true);
+  if (isSeq(existing)) {
+    // Append to the list in place, so its comments, quoting and style stay as the author wrote them.
+    const present = new Set(existing.items.map((item) => String(isScalar(item) ? item.value : item)));
+    for (const id of ids) if (!present.has(id)) existing.add(doc.createNode(id));
+  } else {
+    const node = doc.createNode(ids);
+    if (isSeq(node)) node.flow = true;
+    doc.set('retired', node);
+  }
+  return `---\n${doc.toString({ lineWidth: 0 })}---\n${text.slice(fm.bodyOffset)}`;
+}
+
+/** A delta writes a section's own subsections one level deeper (#### under "### Section:"); the spec has them one level up. */
+function liftHeadings(content: string): string {
+  let out = content;
+  for (const h of headingBlocks(content).filter((b) => b.depth >= 4).reverse()) {
+    if (out[h.start] === '#') out = out.slice(0, h.start) + out.slice(h.start + 1);
+  }
+  return out;
 }
 
 function newCapabilityText(delta: Delta, sections: Section[]): string {
   const blocks = [
     `---\nprefix: ${delta.prefix ?? ''}\n---\n# ${delta.capability}`,
     `## Purpose\n${(delta.purpose ?? '').trim()}`,
-    ...sections.map((s) => `## ${s.heading}\n${s.content}`),
+    ...sections.map((s) => `## ${s.heading}\n${liftHeadings(s.content)}`),
     ['## Requirements', ...delta.added.map((r) => r.block.trim())].join('\n\n'),
   ];
   return `${blocks.join('\n\n')}\n`;
@@ -136,8 +149,8 @@ export function applyDelta(baseText: string | null, delta: Delta, file: string):
     text = anchor ? splice(text, anchor.start, anchor.start, block) : appendAt(text, text.length, block);
   };
   if (delta.purpose !== null) setSection('Purpose', delta.purpose, 'upsert');
-  for (const s of modifiedSections) setSection(s.heading, s.content, 'modify');
-  for (const s of addedSections) setSection(s.heading, s.content, 'add');
+  for (const s of modifiedSections) setSection(s.heading, liftHeadings(s.content), 'modify');
+  for (const s of addedSections) setSection(s.heading, liftHeadings(s.content), 'add');
 
   return { text: text.replace(/\n*$/, '\n'), skipped, diagnostics };
 }

@@ -32,6 +32,17 @@ export function validateCapability(cap: Capability, file: string): Diagnostic[] 
   return out;
 }
 
+/** Lines inside a requirement's scenario part that are not scenario headings or steps (notes, examples, comments). */
+function trailingContent(block: string): string[] {
+  const at = block.search(/^#### Scenario:/m);
+  if (at < 0) return [];
+  return block
+    .slice(at)
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l !== '' && !l.startsWith('#### Scenario:') && !/^[-*]\s+\*\*(GIVEN|WHEN|THEN|AND)\*\*/.test(l));
+}
+
 export function validateDelta(
   delta: Delta,
   base: Capability | null,
@@ -78,6 +89,11 @@ export function validateDelta(
       out.push(diag('warning', 'SCENARIO_DROPPED', `${r.id} drops scenarios: ${dropped.join(', ')}`, t,
         'MODIFIED must contain the whole requirement, including unchanged scenarios'));
     }
+    const lost = trailingContent(old.block).filter((line) => !r.block.includes(line));
+    if (lost.length > 0) {
+      out.push(diag('warning', 'SCENARIO_CONTENT_DROPPED', `${r.id} drops content that followed its scenarios: "${lost[0]}"${lost.length > 1 ? ` and ${lost.length - 1} more line(s)` : ''}`, t,
+        'MODIFIED replaces the whole block: copy everything you want to keep, including notes and examples after the scenarios'));
+    }
   }
   for (const x of delta.removed) {
     note(x.id, 'REMOVED');
@@ -93,6 +109,10 @@ export function validateDelta(
       out.push(diag('error', 'SPEC_PARSE', 'a delta section cannot be named "Requirements"', { file, line: s.line },
         'Change requirements under ADDED / MODIFIED / REMOVED Requirements'));
     }
+  }
+  const purposeSections = [...delta.addedSections, ...delta.modifiedSections].filter((s) => s.heading === 'Purpose');
+  if (purposeSections.length + (delta.purpose !== null ? 1 : 0) > 1) {
+    out.push(diag('error', 'SPEC_PARSE', 'Purpose is given twice', { file, line: purposeSections[0]?.line ?? 1 }, 'Keep one: "## Purpose" or "### Section: Purpose"'));
   }
   const baseSections = new Set((base?.sections ?? []).map((s) => s.heading));
   for (const s of delta.modifiedSections) {

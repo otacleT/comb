@@ -106,4 +106,9 @@ describe('restoreTextStyle', () => {
     expect(restoreTextStyle('\uFEFFa\r\nb\r\n', 'x\ny\n')).toBe('\uFEFFx\r\ny\r\n');
     expect(restoreTextStyle('a\nb\n', 'x\ny\n')).toBe('x\ny\n');
   });
+
+  it('follows the line ending most of the file uses', () => {
+    expect(restoreTextStyle('a\nb\r\nc\nd\n', 'x\ny\n')).toBe('x\ny\n');
+    expect(restoreTextStyle('a\r\nb\r\nc\n', 'x\ny\n')).toBe('x\r\ny\r\n');
+  });
 });

@@ -94,7 +94,7 @@ describe('validateDelta', () => {
       `## MODIFIED Requirements\n\n### Requirement: REQ-ORDER-001 Changed\nx\n\n#### Scenario: other\n- **GIVEN** a\n\n## REMOVED Requirements\n\n### Requirement: REQ-ORDER-001\n**Reason:** r\n`,
     );
     const ds = validateDelta(d, base, 'd.md', new Set());
-    expect(codes(ds)).toEqual(['DELTA_CONFLICT', 'SCENARIO_DROPPED']);
+    expect(codes(ds)).toEqual(['DELTA_CONFLICT', 'SCENARIO_CONTENT_DROPPED', 'SCENARIO_DROPPED']);
     expect(ds.find((x) => x.code === 'SCENARIO_DROPPED')!.severity).toBe('warning');
   });
 
@@ -117,5 +117,17 @@ describe('validateDelta', () => {
     expect(codes(validateDelta(d, null, 'd.md', new Set()))).toEqual(['SPEC_PARSE', 'SPEC_PARSE']);
     const ok = delta(`---\nprefix: PAY\n---\n## Purpose\np\n\n## ADDED Requirements\n\n### Requirement: REQ-PAY-001 New\nx\n${scenario}`, 'payment');
     expect(validateDelta(ok, null, 'd.md', new Set())).toEqual([]);
+  });
+
+  it('warns when MODIFIED drops content after its scenarios', () => {
+    const d = delta(`## MODIFIED Requirements\n\n### Requirement: REQ-ORDER-001 注文の作成\nThe system MUST create an order (D-021).\n\n#### Scenario: 成功\n- **GIVEN** an on-sale listing\n- **WHEN** the buyer taps "Buy"\n- **THEN** an order is created\n- **AND** the listing is reserved\n`);
+    expect(validateDelta(d, base, 'd.md', new Set()).map((x) => [x.code, x.severity])).toEqual([['SCENARIO_CONTENT_DROPPED', 'warning']]);
+  });
+
+  it('rejects a Purpose given twice', () => {
+    const twice = delta('## Purpose\nNew.\n\n## MODIFIED Sections\n\n### Section: Purpose\nOther.\n');
+    expect(codes(validateDelta(twice, base, 'd.md', new Set()))).toEqual(['SPEC_PARSE']);
+    const created = delta(`---\nprefix: PAY\n---\n## Purpose\np\n\n## ADDED Requirements\n\n### Requirement: REQ-PAY-001 New\nx\n${scenario}\n## ADDED Sections\n\n### Section: Purpose\nq\n`, 'payment');
+    expect(codes(validateDelta(created, null, 'd.md', new Set()))).toEqual(['SPEC_PARSE']);
   });
 });

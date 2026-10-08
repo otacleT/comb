@@ -74,4 +74,9 @@ describe('parseDelta', () => {
     const section = '## ADDED Sections\n\n### Section: Examples\n```md\n## Requirements\n';
     expect(parseDelta(section, 'order-lifecycle', 'd.md').diagnostics.map((d) => [d.code, d.target?.line])).toEqual([['SPEC_PARSE', 3]]);
   });
+
+  it("tells how to write a section's own subsections", () => {
+    const { diagnostics } = parseDelta('## MODIFIED Sections\n\n### Section: Fees\nIntro.\n\n### Domestic\n600 yen.\n', 'order-lifecycle', 'd.md');
+    expect(diagnostics.map((d) => d.fix)).toEqual(['Write a section\'s own subsections one level deeper (#### …); archive writes them back as ###']);
+  });
 });

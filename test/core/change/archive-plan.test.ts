@@ -99,4 +99,9 @@ describe('planArchive', () => {
     expect(p).toBeNull();
     expect(diagnostics.map((d) => d.code)).toEqual(['SPEC_PARSE']);
   });
+
+  it('lists a Purpose change in the capability summary', () => {
+    const root = readyProject({ 'comb/changes/tighten-payment/specs/order-lifecycle/spec.md': `${TIGHTEN_DELTA}\n## Purpose\nOrders, paid within two days.\n` });
+    expect(plan(root).plan!.capabilities[0]!.sections).toEqual(['Purpose']);
+  });
 });

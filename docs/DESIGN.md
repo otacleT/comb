@@ -141,7 +141,8 @@ prefix: ORDER          # 新しい capability を作るときだけ必須
 
 - 対象は **ID で特定**する。OpenSpec のように見出しのテキストでは特定しない。そのため RENAMED は不要で、タイトルの変更は MODIFIED で行う。
 - 新しい capability を作るときは、delta に `## Purpose` を含める。既存の capability の Purpose は、`## Purpose` か `MODIFIED Sections` の `Section: Purpose` で置き換える。
-- `Section: Requirements` は使えない（`SPEC_PARSE`）。正本の要件が隠れてしまうため。
+- `Section: Requirements` は使えない（`SPEC_PARSE`）。正本の要件が隠れてしまうため。Purpose を `## Purpose` と `Section: Purpose` の両方で書くこともできない。
+- 節が小見出しを持つときは、delta では1段深く（`####`）書く。archive が正本では `###` に戻す。
 - `(D-n)` のように、change ローカルの Decision を本文で参照してよい。archive のときに恒久IDへ書き換える。
 
 ### 3.3 `proposal.md`
@@ -302,6 +303,7 @@ type Decision    = { id: string; title: string; date: string; refs: string[]; fr
 | `DELTA_CONFLICT` | error | 同じ ID が delta の複数の節に出てくる |
 | `REMOVED_NO_REASON` | error | REMOVED に Reason がない |
 | `SCENARIO_DROPPED` | warning | MODIFIED で、既存のシナリオ名が消えている |
+| `SCENARIO_CONTENT_DROPPED` | warning | MODIFIED で、既存のシナリオの後ろにあった注記や例（手順以外の行）が消えている |
 | `REF_UNKNOWN_REQ` | error | Question / Decision の Refs に存在しない要件がある |
 | `REF_UNKNOWN_DECISION` | error | 本文や Supersedes に存在しない Decision がある |
 | `REF_UNKNOWN_QUESTION` | error | Decision の From に存在しない質問がある |

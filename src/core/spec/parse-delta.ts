@@ -60,7 +60,8 @@ export function parseDelta(text: string, capability: string, file: string): { de
       }
       if (top.text.endsWith('Sections')) {
         if (!h.text.startsWith('Section:')) {
-          bad(h, 'Section: <heading>');
+          diagnostics.push(diag('error', 'SPEC_PARSE', `unexpected heading "${h.text}"`, { file, line: h.line },
+            "Write a section's own subsections one level deeper (#### …); archive writes them back as ###"));
           continue;
         }
         const section = toSection(text, h, h.text.replace(/^Section:\s*/, '').trim());
