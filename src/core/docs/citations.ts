@@ -19,8 +19,8 @@ export interface Citations {
   requirements: string[];
   decisions: string[];
   questions: { change: string; id: string }[];
-  /** `<capability>#<Section heading>`, with the heading as the spec writes it. */
-  sections: string[];
+  /** Whether it cites a spec section (`<capability>#…`, known or not). */
+  section: boolean;
   /** `<capability>#<text>` naming a capability but none of its sections. */
   unknownSections: { capability: string; id: string }[];
   context: boolean;
@@ -37,10 +37,10 @@ const CONTEXT = 'config:context';
 
 /**
  * Only `<capability>#…` is a section citation, where the capability is canonical: any other `x#y` is not a citation.
- * The longest heading the text starts with wins (headings may contain spaces); case is ignored.
+ * It is valid when the text after `#` starts with one of the capability's headings (which may contain spaces), case ignored.
  */
-function sectionCitations(text: string, sections: ReadonlyMap<string, readonly string[]>): Pick<Citations, 'sections' | 'unknownSections'> {
-  const found = new Set<string>();
+function sectionCitations(text: string, sections: ReadonlyMap<string, readonly string[]>): Pick<Citations, 'section' | 'unknownSections'> {
+  let section = false;
   const unknown = new Map<string, { capability: string; id: string }>();
   for (const m of text.matchAll(SECTION_RE)) {
     const capability = m[1]!;
@@ -48,16 +48,14 @@ function sectionCitations(text: string, sections: ReadonlyMap<string, readonly s
     if (headings === undefined) continue;
     const rest = text.slice(m.index + m[0].length);
     if (/^Q-\d+\b/.test(rest)) continue;
-    const heading = [...headings]
-      .sort((a, b) => b.length - a.length)
-      .find((h) => rest.slice(0, h.length).toLowerCase() === h.toLowerCase() && !/^[A-Za-z0-9_-]/.test(rest.slice(h.length)));
-    if (heading !== undefined) found.add(`${capability}#${heading}`);
-    else {
+    section = true;
+    const known = headings.some((h) => rest.slice(0, h.length).toLowerCase() === h.toLowerCase() && !/^[A-Za-z0-9_-]/.test(rest.slice(h.length)));
+    if (!known) {
       const id = `${capability}#${SECTION_END_RE.exec(rest)![0]}`;
       unknown.set(id, { capability, id });
     }
   }
-  return { sections: [...found], unknownSections: [...unknown.values()] };
+  return { section, unknownSections: [...unknown.values()] };
 }
 
 export function extractCitations(text: string, sections: ReadonlyMap<string, readonly string[]> = new Map()): Citations {
@@ -72,8 +70,7 @@ export function extractCitations(text: string, sections: ReadonlyMap<string, rea
   };
 }
 
-const citesAnything = (c: Citations): boolean =>
-  c.requirements.length + c.decisions.length + c.questions.length + c.sections.length + c.unknownSections.length > 0 || c.context;
+const citesAnything = (c: Citations): boolean => c.requirements.length + c.decisions.length + c.questions.length > 0 || c.section || c.context;
 
 const DATED_CHANGE_RE = /^\d{4}-\d{2}-\d{2}-(.+)$/;
 
@@ -96,11 +93,8 @@ export function checkCitations(text: string, file: string, refs: DocRefs, opts: 
     ...c.questions
       .filter((q) => !refs.questions.get(q.change)?.has(q.id))
       .map((q) => diag('error', 'REF_UNKNOWN_QUESTION', `${q.change}#${q.id} is not a question of an archived change`, { file, id: `${q.change}#${q.id}` }, questionFix(q))),
-    ...c.unknownSections.map((s) => {
-      const headings = refs.sections.get(s.capability) ?? [];
-      return diag('error', 'REF_UNKNOWN_SECTION', `${s.id} is not a section of ${s.capability}`, { file, id: s.id },
-        headings.length > 0 ? `Sections of ${s.capability}: ${headings.join(', ')}` : `${s.capability} has no sections besides Requirements: cite its requirements`);
-    }),
+    ...c.unknownSections.map((s) => diag('error', 'REF_UNKNOWN_SECTION', `${s.id} is not a section of ${s.capability}`, { file, id: s.id },
+      `Sections of ${s.capability}: ${(refs.sections.get(s.capability) ?? []).join(', ')}`)),
     ...(opts.history ? [] : c.decisions
       .filter((id) => refs.superseded.has(id))
       .map((id) => diag('warning', 'DOC_CITES_SUPERSEDED', `${id} was superseded by ${refs.superseded.get(id)}`, { file, id }, 'Cite the decision that replaced it, or rewrite the document with /comb:docs'))),

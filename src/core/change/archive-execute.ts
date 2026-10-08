@@ -16,15 +16,13 @@ export function executeArchive(root: string, plan: ArchivePlan): Diagnostic[] {
     return [diag('error', 'ARCHIVE_TARGET_EXISTS', `${plan.to} already exists`, { file: plan.to }, 'Move or remove that folder, then archive again')];
   }
   const temps: string[] = [];
-  const createdDirs: string[] = [];
   let step = '';
   try {
     for (const w of plan.writes) {
       step = `writing ${w.file}`;
       const target = abs(w.file);
       const raw = existsSync(target) ? readFileSync(target, 'utf8') : null;
-      const created = mkdirSync(dirname(target), { recursive: true });
-      if (created !== undefined) createdDirs.push(created);
+      mkdirSync(dirname(target), { recursive: true });
       // Track the temp file before writing it: a write that fails halfway still leaves the file behind.
       temps.push(`${target}${TMP}`);
       writeFileSync(`${target}${TMP}`, raw === null ? w.text : restoreTextStyle(raw, w.text));
@@ -34,7 +32,6 @@ export function executeArchive(root: string, plan: ArchivePlan): Diagnostic[] {
     renameSync(abs(plan.from), abs(plan.to));
   } catch (e) {
     for (const t of temps) rmSync(t, { force: true });
-    for (const d of createdDirs.reverse()) rmSync(d, { recursive: true, force: true });
     return [diag('error', 'ARCHIVE_IO_FAILED', `nothing was changed (failed while ${step}): ${(e as Error).message}`, undefined,
       'Fix the cause (permissions, disk space, a file in the way), then run comb archive again')];
   }

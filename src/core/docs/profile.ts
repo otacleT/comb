@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { isAbsolute, join } from 'node:path';
+import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { diag, type Diagnostic } from '../diagnostics.js';
 import { normalizeText } from '../markdown/text.js';
@@ -46,8 +46,6 @@ export function loadProfile(dir: string): { profile: Profile | null; diagnostics
   const skillFile = join(dir, 'SKILL.md');
   if (!existsSync(skillFile)) return bad('SKILL.md not found');
   const outputs: DocOutput[] = [];
-  /** Relative, without "..": paths stay inside the documents folder and templates inside the profile. */
-  const inside = (p: string): boolean => p !== '' && !isAbsolute(p) && !p.split(/[\\/]+/).includes('..');
   for (const item of r.outputs as unknown[]) {
     const o = (item ?? {}) as Record<string, unknown>;
     if (typeof o.id !== 'string' || typeof o.path !== 'string' || typeof o.template !== 'string' || typeof o.audience !== 'string') {
@@ -57,8 +55,6 @@ export function loadProfile(dir: string): { profile: Profile | null; diagnostics
     if (sources.length === 0 || sources.some((s) => !(DOC_SOURCES as readonly unknown[]).includes(s))) {
       return bad(`output ${o.id}: "sources" must be a non-empty list of ${DOC_SOURCES.join(', ')}`);
     }
-    if (!inside(o.path) || !inside(o.template)) return bad(`output ${o.id}: "path" and "template" must be relative and must not contain ".."`);
-    if (outputs.some((x) => x.id === o.id || x.path === o.path)) return bad(`output ${o.id}: ids and paths must be unique`);
     const templateFile = join(dir, o.template);
     if (!existsSync(templateFile)) return bad(`output ${o.id}: template ${o.template} not found`);
     outputs.push({ id: o.id, path: o.path, template: normalizeText(readFileSync(templateFile, 'utf8')), audience: o.audience, sources: sources as DocSource[] });

@@ -14,7 +14,6 @@ export const describeInit = (r: InitResult): string =>
     ...r.skipped.map((f) => `kept     ${f}`),
     ...r.modified.map((f) => `kept     ${f} (edited by you; not updated)`),
     ...r.newer.map((f) => `kept     ${f} (made by a newer comb; upgrade comb to update it)`),
-    ...r.orphaned.map((f) => `orphaned ${f} (this comb no longer generates it; delete it if you do not use it)`),
   ].join('\n');
 
 export function registerInit(program: Command, ctx: CliContext): void {
