@@ -1,3 +1,4 @@
+import { isAbsolute } from 'node:path';
 import { parse as parseYaml, stringify } from 'yaml';
 import { diag, type Diagnostic } from '../diagnostics.js';
 
@@ -8,6 +9,7 @@ export interface CombConfig {
   context: string;
   review: { lenses: string[]; batch: number };
   rules: Record<string, string[]>;
+  documents: { profile: string; dir: string };
 }
 
 export const DEFAULT_LENSES = ['consistency', 'formalization', 'edge-cases', 'change-impact'];
@@ -21,10 +23,19 @@ export function defaultConfig(language = 'en'): CombConfig {
     context: '',
     review: { lenses: [...DEFAULT_LENSES], batch: 3 },
     rules: {},
+    documents: { profile: 'solo', dir: 'docs' },
   };
 }
 
 const isStringArray = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string');
+
+export const DOCUMENT_PROFILES = ['solo'];
+
+/** A folder inside the project and outside comb/ (documents must never land among the canonical files). */
+const isDocsDir = (dir: string): boolean => {
+  const parts = dir.split(/[\\/]+/).filter((p) => p !== '' && p !== '.');
+  return parts.length > 0 && !isAbsolute(dir) && !parts.includes('..') && parts[0] !== 'comb';
+};
 
 export function parseConfig(text: string, file: string): { config: CombConfig; diagnostics: Diagnostic[] } {
   const diagnostics: Diagnostic[] = [];
@@ -75,6 +86,19 @@ export function parseConfig(text: string, file: string): { config: CombConfig; d
     const entries = typeof r.rules === 'object' && r.rules !== null ? Object.entries(r.rules) : null;
     if (entries && entries.every(([, v]) => isStringArray(v))) config.rules = Object.fromEntries(entries) as Record<string, string[]>;
     else bad('"rules" must map artifact names to lists of strings');
+  }
+  if (r.documents !== undefined && (r.documents === null || typeof r.documents !== 'object' || Array.isArray(r.documents))) {
+    bad('"documents" must be a mapping with "profile" and/or "dir"');
+  } else if (r.documents !== undefined) {
+    const d = r.documents as Record<string, unknown>;
+    if (d.profile !== undefined) {
+      if (typeof d.profile === 'string' && DOCUMENT_PROFILES.includes(d.profile)) config.documents.profile = d.profile;
+      else bad(`"documents.profile" must be one of ${DOCUMENT_PROFILES.join(', ')} (v0.1 has only solo)`);
+    }
+    if (d.dir !== undefined) {
+      if (typeof d.dir === 'string' && isDocsDir(d.dir)) config.documents.dir = d.dir.split(/[\\/]+/).filter((p) => p !== '' && p !== '.').join('/');
+      else bad('"documents.dir" must be a relative folder inside the project and outside comb/');
+    }
   }
   return { config, diagnostics };
 }

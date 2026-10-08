@@ -1,0 +1,34 @@
+id: solo
+type: comb.document-profile
+version: 1
+outputs:
+  - id: product
+    path: product.md
+    template: templates/product.md
+    audience: you and new collaborators, getting the whole picture in a few minutes
+    sources: [config, specs]
+  - id: features
+    path: features.md
+    template: templates/features.md
+    audience: you and collaborators checking how a feature behaves
+    sources: [specs]
+  - id: screens
+    path: screens.md
+    template: templates/screens.md
+    audience: you and collaborators checking what each screen shows and does
+    sources: [specs]
+  - id: flows
+    path: flows.md
+    template: templates/flows.md
+    audience: you and collaborators following a user through the product
+    sources: [specs]
+  - id: decisions
+    path: decisions.md
+    template: templates/decisions.md
+    audience: you, later, asking why something is the way it is
+    sources: [decisions]
+  - id: open-questions
+    path: open-questions.md
+    template: templates/open-questions.md
+    audience: you, before the next change, checking what is undecided or accepted as a risk
+    sources: [open-questions]

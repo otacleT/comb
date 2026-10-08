@@ -29,4 +29,15 @@ describe('config', () => {
   it('reports broken YAML', () => {
     expect(parseConfig('version: [', 'c').diagnostics[0]!.code).toBe('CONFIG_INVALID');
   });
+
+  it('defaults the documents to the solo profile in docs/', () => {
+    expect(parseConfig('version: 1\n', 'c').config.documents).toEqual({ profile: 'solo', dir: 'docs' });
+    expect(parseConfig('version: 1\ndocuments:\n  dir: site/docs/\n', 'c').config.documents).toEqual({ profile: 'solo', dir: 'site/docs' });
+  });
+
+  it('rejects other profiles, and folders outside the project or inside comb/', () => {
+    for (const bad of ['documents: 3', 'documents:\n  profile: client-work', 'documents:\n  dir: /tmp/docs', 'documents:\n  dir: ../docs', 'documents:\n  dir: comb/docs', "documents:\n  dir: ''"]) {
+      expect(parseConfig(`version: 1\n${bad}\n`, 'c').diagnostics.map((d) => d.code), bad).toEqual(['CONFIG_INVALID']);
+    }
+  });
 });
