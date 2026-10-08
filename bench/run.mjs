@@ -32,12 +32,15 @@ const sh = (cmd, cwd) => {
   const r = spawnSync('sh', ['-c', cmd], { cwd, env, encoding: 'utf8' });
   if (r.status !== 0) throw new Error(`${cmd} failed: ${r.stderr}`);
 };
-const claude = (prompt, cwd, tools) => {
-  const r = spawnSync('claude', ['-p', prompt, '--permission-mode', 'acceptEdits', '--allowedTools', ...tools, '--output-format', 'stream-json', '--verbose'], {
+// Long prompts (the grader's carries the spec and every question) go through stdin: argv has a per-argument limit on Linux.
+const claude = (prompt, cwd, tools, { stdin = false } = {}) => {
+  const flags = ['--permission-mode', 'acceptEdits', '--allowedTools', ...tools, '--output-format', 'stream-json', '--verbose'];
+  const r = spawnSync('claude', stdin ? ['-p', ...flags] : ['-p', prompt, ...flags], {
     cwd,
     env,
     encoding: 'utf8',
     maxBuffer: 1 << 28,
+    ...(stdin ? { input: prompt } : {}),
   });
   if (r.error) throw new Error(`could not run claude: ${r.error.message}`);
   const result = resultOf(r.stdout ?? '');
@@ -56,7 +59,7 @@ const results = runAll(runs, (i) => {
   sh('git init -q && comb init --language en >/dev/null && git add -A && git commit -qm base', work);
   const review = claude(`/comb:review ${config.change}`, work, ['Bash(comb:*)', 'Read', 'Write', 'Edit', 'Glob', 'Grep']);
   const questions = readFileSync(join(work, 'comb', 'changes', config.change, 'questions.md'), 'utf8');
-  const grade = claude(graderPrompt({ spec, answerKey, questions }), work, ['Read']);
+  const grade = claude(graderPrompt({ spec, answerKey, questions }), work, ['Read'], { stdin: true });
   const matches = parseGrade(grade.text, keys);
   console.log(`run ${i}: ${matches.filter((m) => m.question).length}/${keys.length}  (review $${review.costUsd.toFixed(2)}, ${review.minutes} min, ${review.toolErrors} tool errors)`);
   return { run: i, workDir: work, review: { ...review, text: undefined }, grade: { costUsd: grade.costUsd, minutes: grade.minutes }, matches };

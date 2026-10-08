@@ -19,6 +19,7 @@
   },
   "files": [
     "dist",
+    "!dist/**/*.map",
     "templates",
     "CHANGELOG.md"
   ],
@@ -32,7 +33,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "prepack": "npm run build"
+    "prepack": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && npm run build"
   },
   "license": "MIT",
   "dependencies": {

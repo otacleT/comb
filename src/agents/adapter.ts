@@ -9,6 +9,8 @@ export interface GeneratedFile {
 export interface AgentAdapter {
   id: string;
   files(templatesDir: string, version: string): GeneratedFile[];
+  /** Root-relative paths of the files in this agent's generated locations (used to find ones a newer comb no longer makes). */
+  existing(root: string): string[];
 }
 
 /** Every file Comb generates contains this marker; files without it are user-owned. */

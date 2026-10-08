@@ -12,7 +12,7 @@ cd /path/to/your/project
 comb init --language en          # or ja
 ```
 
-`comb init` creates `comb/` (config, specs, decisions, changes) and installs the Claude Code skills and `/comb:*` commands. After upgrading Comb, run `comb update` to refresh them; files you edited are kept.
+`comb init` creates `comb/` (config, specs, decisions, changes) and installs the Claude Code skills and `/comb:*` commands. After upgrading Comb, run `comb update` to refresh them. Files you edited are kept as they are; to take the new version of one, delete it and run `comb update` again.
 
 ## The loop
 
@@ -53,7 +53,7 @@ comb/
 └── changes/<id>/                 # proposal.md, specs/<capability>/spec.md (delta), review.md, questions.md, decisions.md, tasks.md
 ```
 
-Everything is plain Markdown in your repository. See `docs/DESIGN.md` for the formats.
+Everything is plain Markdown in your repository. The formats are described in [docs/DESIGN.md](https://github.com/otacleT/comb/blob/main/docs/DESIGN.md) (Japanese).
 
 ## Development
 

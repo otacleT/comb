@@ -26,7 +26,7 @@ describe('package.json', () => {
     const pkg = readJson('package.json');
     expect(pkg.name).toBe('@otaclet/comb');
     expect(pkg.version).toBe('0.1.0');
-    expect(pkg.scripts.prepack).toBe('npm run build');
+    expect(pkg.scripts.prepack).toContain('npm run build');
     expect(pkg.publishConfig).toEqual({ access: 'public' });
     expect(readFileSync('CHANGELOG.md', 'utf8')).toContain('## 0.1.0');
     expect(readFileSync('LICENSE', 'utf8')).toContain('MIT License');
@@ -40,5 +40,13 @@ describe('package.json', () => {
     for (const f of ['templates/skills/archive.md', 'templates/lenses/formalization.md', 'LICENSE', 'CHANGELOG.md', 'README.md']) {
       expect(files).toContain(f);
     }
+  }, 30000);
+
+  it('does not pack source maps and cleans dist before building', () => {
+    const pkg = readJson('package.json');
+    expect(pkg.scripts.prepack).toContain('rmSync');
+    const out = execFileSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const files: string[] = JSON.parse(out.slice(out.indexOf('[')))[0].files.map((f: { path: string }) => f.path);
+    expect(files.filter((f) => f.endsWith('.map'))).toEqual([]);
   }, 30000);
 });
