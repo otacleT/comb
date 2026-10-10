@@ -41,9 +41,10 @@ const json = async (args: string[], root: string) => {
 const states = (env: { data: { outputs: { path: string; state: string }[] } }) => Object.fromEntries(env.data.outputs.map((o) => [o.path, o.state]));
 
 describe('comb docs', () => {
-  it('reports every document missing before the first generation', async () => {
+  it('reports every document missing before the first generation, without failing', async () => {
     const { code, env } = await json(['docs'], project());
-    expect(code).toBe(1);
+    expect(code).toBe(0);
+    expect(env.diagnostics.map((d: { code: string }) => d.code)).toEqual(['DOCS_NOT_STARTED']);
     expect(Object.values(states(env))).toEqual(Array(6).fill('missing'));
     expect(env.data.outputs[0].path).toBe('docs/product.md');
   });

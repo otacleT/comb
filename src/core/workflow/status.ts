@@ -6,7 +6,7 @@ import { deltaHash } from './hash.js';
 import { readReviewStamp } from './review-stamp.js';
 
 export type ArtifactId = 'proposal' | 'delta' | 'review' | 'clarify' | 'tasks' | 'apply';
-export type ArtifactState = 'done' | 'missing' | 'invalid' | 'in-progress' | 'stale' | 'blocked';
+export type ArtifactState = 'done' | 'open' | 'missing' | 'invalid' | 'in-progress' | 'stale' | 'blocked';
 
 export interface ArtifactStatus {
   id: ArtifactId;
@@ -89,7 +89,7 @@ export function computeStatus(change: ChangeSnapshot, validation: Diagnostic[]):
       : counts.openHigh > 0
         ? { id: 'clarify', state: 'blocked', detail: `${counts.openHigh} high question(s) open` }
         : counts.open > 0
-          ? { id: 'clarify', state: 'done', detail: `${counts.open} open (medium/low)` }
+          ? { id: 'clarify', state: 'open', detail: `${counts.open} medium/low question(s): not blocking apply; answer or defer them before archive` }
           : { id: 'clarify', state: 'done' };
   const taskFile: ArtifactStatus = { id: 'tasks', state: change.files.tasks === undefined ? 'missing' : 'done' };
   const apply: ArtifactStatus =
@@ -99,8 +99,9 @@ export function computeStatus(change: ChangeSnapshot, validation: Diagnostic[]):
         ? { id: 'apply', state: 'done' }
         : { id: 'apply', state: 'in-progress', detail: `${tasks.done}/${tasks.total}` };
   const artifacts = [proposal, delta, review, clarify, taskFile, apply];
-  // Archive needs every question answered or deferred (DESIGN §5.1), so open medium/low questions send the user back to clarify.
-  const next = artifacts.find((a) => a.state !== 'done')?.id ?? (counts.open > 0 ? 'clarify' : 'archive');
+  // Open medium/low questions do not hold up the later steps, but archive needs every question answered or deferred
+  // (DESIGN §5.1), so they send the user back to clarify once everything else is done.
+  const next = artifacts.find((a) => a.state !== 'done' && a.state !== 'open')?.id ?? (counts.open > 0 ? 'clarify' : 'archive');
   const baseDrift = validation.filter((d) => d.code === 'BASE_DRIFT').map((d) => d.target?.id ?? '');
   return { change: change.id, artifacts, next, tasks, questions: counts, baseDrift };
 }

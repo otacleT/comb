@@ -14,6 +14,32 @@ comb init --language en          # or ja
 
 `comb init` creates `comb/` (config, specs, decisions, changes) and installs the Claude Code skills and `/comb:*` commands. After upgrading Comb, run `comb update` to refresh them. Files you edited are kept as they are; to take the new version of one, delete it and run `comb update` again.
 
+## Try it
+
+A first pass on a small idea takes about 15 minutes:
+
+```bash
+mkdir comb-try && cd comb-try && git init
+comb init
+claude
+```
+
+1. `/comb:propose A small library: members borrow a book for 14 days and may renew once` writes a change: a proposal, a spec delta and tasks.
+2. `/comb:review` reads the delta through four lenses and writes questions, each with options and a recommendation.
+3. `/comb:clarify` walks you through the open questions. Answer the high-severity ones, or defer them; each answer becomes a decision and a delta edit.
+4. `comb status` shows where the change stands and the next step. Run `/comb:review` again to re-check what the answers changed, then `/comb:apply` and `/comb:archive`.
+
+What a step costs, measured with `claude -p` at API prices on Comb's test projects:
+
+| Step | Time | Cost |
+|---|---|---|
+| propose | 2 min | $0.7 |
+| review | 7–17 min | $2.0–3.7 |
+| clarify | 1–9 min | $0.5–2.7 |
+| docs | 2–5 min | $0.9–1.5 |
+
+The whole loop for a small capability (propose, two reviews, two clarify rounds, archive) took 13 minutes and about $5. Specs with money flows take longer: every review finds new high-severity questions in the combinations of earlier decisions, and you decide when to defer the rest and move on.
+
 ## The loop
 
 | Step | In Claude Code | What happens |

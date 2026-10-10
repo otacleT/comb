@@ -84,4 +84,13 @@ describe('parseDelta', () => {
     const { diagnostics } = parseDelta('## MODIFIED Sections\n\n### Conventions\nAll prices include tax.\n', 'order-lifecycle', 'd.md');
     expect(diagnostics.map((d) => d.fix)).toEqual(['Use "### Section: <heading>"']);
   });
+
+  it('moves a requirement, section or scenario heading written as ## to its level', () => {
+    const fixes = (text: string) => parseDelta(text, 'order-lifecycle', 'd.md').diagnostics.map((d) => d.fix);
+    expect(fixes('## Requirement: REQ-ORDER-003 Auto-cancel\n')).toEqual([
+      'Use "### Requirement: REQ-ORDER-003 Auto-cancel" under "## ADDED Requirements", "## MODIFIED Requirements" or "## REMOVED Requirements"',
+    ]);
+    expect(fixes('## Section: Timers\n')).toEqual(['Use "### Section: Timers" under "## ADDED Sections" or "## MODIFIED Sections"']);
+    expect(fixes('## Scenario: Expired\n')).toEqual(['Use "#### Scenario: Expired" under its "### Requirement: …"']);
+  });
 });

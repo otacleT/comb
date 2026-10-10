@@ -63,8 +63,13 @@ export function docsStatus(
     return { id: o.id, path, state: 'done', sourceHash: hash, recordedHash: header.hash };
   });
   const uncovered = [...refs.requirements].filter((id) => !cited.has(id)).sort();
+  const status = { profile: profile.id, dir, outputs, uncovered };
+  if (outputs.every((o) => o.state === 'missing')) {
+    // Before the first /comb:docs nothing is wrong yet, and a project that does not use the docs must not fail on them.
+    return { status, diagnostics: [diag('info', 'DOCS_NOT_STARTED', 'no product docs have been generated yet', undefined, 'Run /comb:docs to write them')] };
+  }
   if (uncovered.length > 0 && outputs.some((o) => o.state === 'done' || o.state === 'stale')) {
     diagnostics.push(diag('warning', 'DOC_UNCOVERED', `no document cites ${uncovered.join(', ')}`, undefined, 'Cover them in features.md, screens.md or flows.md'));
   }
-  return { status: { profile: profile.id, dir, outputs, uncovered }, diagnostics };
+  return { status, diagnostics };
 }

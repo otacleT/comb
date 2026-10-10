@@ -86,3 +86,39 @@ describe('comb validate --change records the base (S1)', () => {
     expect(metaOf().base['REQ-ORDER-002']).toBe(recorded);
   });
 });
+
+describe('comb validate on change files it cannot read', () => {
+  const run = async (files: Record<string, string>) => {
+    const root = makeProject({
+      'comb/config.yaml': CONFIG_YAML,
+      'comb/specs/order-lifecycle/spec.md': ORDER_SPEC,
+      'comb/decisions.md': DECISIONS_MD,
+      'comb/changes/a/.comb.yaml': metaYaml('a'),
+      ...files,
+    });
+    const r = await runCli(['validate', '--change', 'a', '--json'], root);
+    return { code: r.code, diagnostics: JSON.parse(r.stdout).diagnostics as { code: string; severity: string; fix?: string; target?: { file?: string } }[] };
+  };
+
+  it('flags a delta outside specs/<capability>/spec.md', async () => {
+    const { code, diagnostics } = await run({ 'comb/changes/a/specs/order-lifecycle.md': MODIFY_PAYMENT_DELTA });
+    expect(code).toBe(1);
+    expect(diagnostics.map((d) => d.code)).toEqual(['DELTA_MISPLACED']);
+    expect(diagnostics[0]!.target?.file).toBe('comb/changes/a/specs/order-lifecycle.md');
+    expect(diagnostics[0]!.fix).toContain('comb/changes/a/specs/order-lifecycle/spec.md');
+  });
+
+  it('warns about a tasks.md without checkboxes', async () => {
+    const { code, diagnostics } = await run({ 'comb/changes/a/tasks.md': '1. Shorten the payment window\n2. Test it\n' });
+    expect(code).toBe(0);
+    expect(diagnostics.map((d) => [d.code, d.severity])).toEqual([['TASKS_NO_CHECKBOX', 'warning']]);
+  });
+
+  it('points a requirement heading written one level too high to its place, without also calling the delta empty', async () => {
+    const { diagnostics } = await run({
+      'comb/changes/a/specs/order-lifecycle/spec.md': MODIFY_PAYMENT_DELTA.replace('## MODIFIED Requirements\n\n### ', '## '),
+    });
+    expect(diagnostics.map((d) => d.code)).toEqual(['SPEC_PARSE']);
+    expect(diagnostics[0]!.fix).toContain('"### Requirement: REQ-ORDER-002 Payment"');
+  });
+});

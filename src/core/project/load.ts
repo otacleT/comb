@@ -126,7 +126,29 @@ export function loadChange(root: string, id: string): ChangeSnapshot | null {
     const parsed = parseDelta(text, cap, file);
     deltas.push({ capability: cap, path: p, file, text, delta: parsed.delta, diagnostics: parsed.diagnostics });
   }
+  diagnostics.push(...misplacedDeltas(root, id));
   return { id, dir, meta, files, deltas, diagnostics };
+}
+
+/** Markdown under a change's specs/ that is not specs/<capability>/spec.md is never read, so the delta would look missing. */
+function misplacedDeltas(root: string, id: string): Diagnostic[] {
+  const specsDir = join(paths.change(root, id), 'specs');
+  if (!existsSync(specsDir)) return [];
+  const out: Diagnostic[] = [];
+  const report = (p: string, cap: string): void => {
+    const file = rel(root, p);
+    out.push(diag('error', 'DELTA_MISPLACED', `${file} is not read as a delta`, { file },
+      `Deltas are read only from specs/<capability>/spec.md: move it to ${rel(root, paths.delta(root, id, cap))}`));
+  };
+  for (const name of readdirSync(specsDir).sort()) {
+    const p = join(specsDir, name);
+    if (statSync(p).isDirectory()) {
+      for (const inner of readdirSync(p).sort()) if (inner.endsWith('.md') && inner !== 'spec.md') report(join(p, inner), name);
+    } else if (name.endsWith('.md')) {
+      report(p, name.slice(0, -'.md'.length));
+    }
+  }
+  return out;
 }
 
 export const loadAllChanges = (root: string): ChangeSnapshot[] =>

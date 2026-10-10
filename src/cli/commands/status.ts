@@ -30,17 +30,18 @@ export function registerStatus(program: Command, ctx: CliContext): void {
         const c = all.find((x) => x.id === id);
         return c ? computeStatus(c, validateChange(project, c, all)) : null;
       };
+      // The status does not depend on the config, so it is still shown; a broken config is reported with it.
       if (opts.change !== undefined) {
         const s = statusOf(opts.change);
         if (!s) {
           usageError(ctx, 'status', json, 'CHANGE_NOT_FOUND', `change "${opts.change}" not found`);
           return;
         }
-        finish(ctx, envelope('status', s, []), json, describeStatus);
+        finish(ctx, envelope('status', s, project.diagnostics), json, describeStatus);
         return;
       }
       const list = all.map((c) => statusOf(c.id) as ChangeStatus);
-      finish(ctx, envelope('status', list, []), json, (l) =>
+      finish(ctx, envelope('status', list, project.diagnostics), json, (l) =>
         l.length === 0 ? 'no active changes' : l.map((s) => `${s.change}  next: ${s.next}`).join('\n'),
       );
     });

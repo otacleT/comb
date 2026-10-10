@@ -22,4 +22,18 @@ describe('comb status', () => {
     const r = await runCli(['status'], root);
     expect(r.stdout.trim()).toBe('add-x  next: delta');
   });
+
+  it('reports a broken config next to the status', async () => {
+    const broken = makeProject({
+      'comb/config.yaml': `${CONFIG_YAML}review:\n  lenses: [security]\n`,
+      'comb/changes/add-x/.comb.yaml': metaYaml('add-x'),
+    });
+    for (const args of [['status'], ['status', '--change', 'add-x']]) {
+      const r = await runCli([...args, '--json'], broken);
+      expect(r.code).toBe(1);
+      const env = JSON.parse(r.stdout);
+      expect(env.diagnostics.map((d: { code: string }) => d.code)).toEqual(['CONFIG_INVALID']);
+      expect(env.data).not.toBeNull();
+    }
+  });
 });

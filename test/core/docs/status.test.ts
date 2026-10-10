@@ -42,10 +42,15 @@ const texts = (overrides: Record<string, string | null> = {}) =>
 const codes = (ds: { code: string; target?: { id?: string } }[]) => ds.map((d) => [d.code, d.target?.id]);
 
 describe('docsStatus', () => {
-  it('reports every output missing before the first generation, without a coverage warning', () => {
+  it('reports every output missing before the first generation, as a note rather than an error', () => {
     const { status, diagnostics } = docsStatus(profile, 'docs', inputs, refs, new Map(profile.outputs.map((o) => [`docs/${o.path}`, null])));
     expect(status.outputs.map((o) => [o.path, o.state])).toEqual(profile.outputs.map((o) => [`docs/${o.path}`, 'missing']));
-    expect(diagnostics.map((d) => d.code)).toEqual(Array(6).fill('DOC_MISSING'));
+    expect(diagnostics.map((d) => [d.code, d.severity])).toEqual([['DOCS_NOT_STARTED', 'info']]);
+  });
+
+  it('reports the outputs still missing once any document was generated', () => {
+    const { diagnostics } = docsStatus(profile, 'docs', inputs, refs, texts({ screens: null }));
+    expect(diagnostics.map((d) => [d.code, d.severity, d.target?.file])).toEqual([['DOC_MISSING', 'error', 'docs/screens.md']]);
   });
 
   it('accepts a complete, cited and stamped set, including a document that only has Gaps', () => {

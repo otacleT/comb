@@ -171,3 +171,19 @@ E4 の合格条件は次の3つとする。(1) 回答から Decision が作ら�
 ドキュメントは、要件のほかに、正本の spec の節（Purpose と、Requirements 以外の節）を `<capability>#<見出し>` で引用できる。見出しは spec の `## 見出し` の文字列（バッククォートなどの Markdown の書式を除いたもの）で、大文字・小文字は区別しない。スペースを含む見出しや日本語の見出しも引用できる。`#` の後ろがいずれかの見出しで始まっていれば一致とし、見出しの直後に英数字・`_`・`-` が続く場合は一致としない（日本語には語の区切りがないため、`状態遷移` に `状態` が一致することはある）。`<capability>#Q-n` は質問の引用として読む。`comb docs` は、見出しがその capability の節にないとき `REF_UNKNOWN_SECTION` を出す。網羅性の検査（DOC_UNCOVERED）は要件だけを対象とし、節には求めない。
 
 **Why:** E7 で、Conventions の節にしか書かれていない内容を、エージェントが近い要件の ID で代用して引用した。内容は正しいが、引用先がずれる。`#` の前が capability 名のときだけ引用とみなすのは、`features.md#gaps` のようなリンクや無関係な `x#y` を誤って error にしないためである。代わりに capability 名を打ち間違えた引用は数えられないが、その節に引用がほかになければ DOC_UNCITED_SECTION で気づける。節にまで網羅を求めると、「Open Questions」のような節にも引用を強いて警告が増える。ユーザーが 2026-10-08 に選んだ。
+
+## D-024: medium / low の質問だけが open のとき、clarify の状態は done ではなく open にする
+- **Date:** 2026-10-10
+- **Refs:** DESIGN 5.1, D-019
+
+clarify の状態に `open` を加える。open は後の工程（tasks、apply）を止めず、next はそれらを先に指す。ほかがすべて done になると、next は clarify に戻る（archive にはすべての質問の回答か保留が要るため）。
+
+**Why:** これまでは `clarify done (1 open (medium/low))` と表示しながら、apply の後で `next: clarify` になり、人にもエージェントにも「終わった」と読めて矛盾していた（2026-10-10 のレビューの指摘）。止めない、という扱いは D-019 のまま変えない。ユーザーが 2026-10-10 に選んだ。
+
+## D-025: `comb docs` は、ドキュメントを1本も生成していないときは失敗にしない
+- **Date:** 2026-10-10
+- **Refs:** DESIGN 7.2, docs/experience-log.md（E7）
+
+すべての出力が missing のときは、`DOC_MISSING` の error の代わりに info の `DOCS_NOT_STARTED` を1件出し、終了コードは 0 にする。1本でも生成した後に足りないものは、これまでどおり `DOC_MISSING`（error）とする。
+
+**Why:** archive の Skill は最後に `comb docs` を実行するため、docs を使わないプロジェクトでも archive のたびに exit 1 が出ていた。`/comb:docs` も最初の手順でこれを踏み、E7 ではツールエラーとして数えられた。ユーザーが 2026-10-10 に選んだ。

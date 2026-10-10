@@ -1,4 +1,5 @@
 import type { Command } from 'commander';
+import { hasErrors } from '../../core/diagnostics.js';
 import { buildInstructions, INSTRUCTION_ARTIFACTS, type InstructionArtifact, type Instructions } from '../../core/instructions/build.js';
 import { loadDocs } from '../../core/docs/load.js';
 import { buildDocsInstructions, type DocsInstructions } from '../../core/instructions/docs.js';
@@ -73,7 +74,13 @@ export function registerInstructions(program: Command, ctx: CliContext): void {
         usageError(ctx, 'instructions', json, 'CHANGE_NOT_FOUND', `change "${opts.change}" not found`, 'Create it with "comb new change <id>"');
         return;
       }
-      const ins = buildInstructions(artifact as InstructionArtifact, loadProject(root), change, all, TEMPLATES_DIR);
+      const project = loadProject(root);
+      // The instructions carry the config (lenses, rules, language), so a broken one must not fall back to the defaults.
+      if (hasErrors(project.diagnostics)) {
+        finish(ctx, envelope('instructions', null, project.diagnostics), json, () => '');
+        return;
+      }
+      const ins = buildInstructions(artifact as InstructionArtifact, project, change, all, TEMPLATES_DIR);
       finish(ctx, envelope('instructions', ins, []), json, human);
     });
 }

@@ -75,7 +75,10 @@ it('blocks clarify while a high question is open and counts questions', () => {
     snapshot({ proposal: PROPOSAL, review: reviewed, questions: questions.replace('high', 'medium'), tasks: '- [ ] a' }, true),
     [],
   );
-  expect(lowOnly.artifacts[3]).toEqual({ id: 'clarify', state: 'done', detail: '2 open (medium/low)' });
+  expect(lowOnly.artifacts[3]).toEqual({
+    id: 'clarify', state: 'open', detail: '2 medium/low question(s): not blocking apply; answer or defer them before archive',
+  });
+  expect(lowOnly.next).toBe('apply');
 });
 
 it('marks clarify invalid for format errors in questions.md', () => {
@@ -96,7 +99,7 @@ it('points to clarify, not archive, while any question is still open', () => {
     'comb/changes/tighten-payment/questions.md': `${TIGHTEN_QUESTIONS}\n## Q-2: Later?\n- **Status:** open\n- **Severity:** medium\n`,
   });
   const s = computeStatus(loadChange(root, 'tighten-payment')!, []);
-  expect(s.artifacts.every((a) => a.state === 'done')).toBe(true);
+  expect(s.artifacts.filter((a) => a.state !== 'done').map((a) => `${a.id}:${a.state}`)).toEqual(['clarify:open']);
   expect(s.next).toBe('clarify');
 });
 

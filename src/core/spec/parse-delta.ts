@@ -16,6 +16,16 @@ export const DELTA_HEADINGS = [
 
 const KNOWN = new Set<string>(DELTA_HEADINGS);
 
+/** For an unknown ## heading: where it most likely belongs. A heading one level too high hides everything under it. */
+function placeFor(heading: string): string {
+  if (heading.startsWith('Requirement:')) {
+    return `Use "### ${heading}" under "## ADDED Requirements", "## MODIFIED Requirements" or "## REMOVED Requirements"`;
+  }
+  if (heading.startsWith('Section:')) return `Use "### ${heading}" under "## ADDED Sections" or "## MODIFIED Sections"`;
+  if (heading.startsWith('Scenario:')) return `Use "#### ${heading}" under its "### Requirement: …"`;
+  return `Use one of: ${DELTA_HEADINGS.join(', ')}`;
+}
+
 function field(segment: string, name: string): string | null {
   const m = new RegExp(`\\*\\*${name}:\\*\\*\\s*(.+)`).exec(segment);
   return m ? (m[1] as string).trim() : null;
@@ -42,8 +52,7 @@ export function parseDelta(text: string, capability: string, file: string): { de
   for (const top of blocks.filter((b) => b.depth === 2)) {
     if (!KNOWN.has(top.text)) {
       diagnostics.push(
-        diag('error', 'SPEC_PARSE', `unknown delta section "${top.text}"`, { file, line: top.line },
-          `Use one of: ${DELTA_HEADINGS.join(', ')}`),
+        diag('error', 'SPEC_PARSE', `unknown delta section "${top.text}"`, { file, line: top.line }, placeFor(top.text)),
       );
       continue;
     }

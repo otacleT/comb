@@ -302,6 +302,8 @@ type Decision    = { id: string; title: string; date: string; refs: string[]; fr
 | `DELTA_ID_EXISTS` | error | ADDED の ID がすでに正本にある |
 | `DELTA_CONFLICT` | error | 同じ ID が delta の複数の節に出てくる |
 | `REMOVED_NO_REASON` | error | REMOVED に Reason がない |
+| `DELTA_MISPLACED` | error | change の `specs/` の下に、`specs/<cap>/spec.md` 以外の Markdown がある（delta として読まれない） |
+| `TASKS_NO_CHECKBOX` | warning | `tasks.md` にチェックボックスがなく、進捗を数えられない |
 | `SCENARIO_DROPPED` | warning | MODIFIED で、既存のシナリオ名が消えている |
 | `SCENARIO_CONTENT_DROPPED` | warning | MODIFIED で、既存のシナリオの後ろにあった注記や例（手順以外の行）が消えている |
 | `REF_UNKNOWN_REQ` | error | Question / Decision の Refs、または生成したドキュメントの引用に、存在しない要件がある |
@@ -323,13 +325,13 @@ proposal → delta → review → clarify → tasks → apply → archive
 | proposal | `proposal.md` があり、Why / What Changes / Impact がそろっている | missing |
 | delta | delta が1つ以上あり、`validate` に error がない | invalid |
 | review | `review.md` があり、`reviewed` のハッシュが現在の delta のハッシュと一致する | **stale**（delta が変わった）/ missing |
-| clarify | 重要度 high の open な質問が0件 | blocked（high が n 件）。medium / low の open は件数だけ示す |
+| clarify | open な質問が0件 | blocked（high が n 件）/ open（medium / low だけが残る。後の工程は止めないが、archive の前に回答か保留が要る。D-024） |
 | tasks | `tasks.md` がある | missing |
 | apply | 全タスクが完了 | in-progress（k/n） |
 | archive | 下記の archive 条件を満たす | — |
 
 - **delta のハッシュ**：change の `specs/**/spec.md` を、パス順に連結して正規化した内容の sha256。
-- **next**：上の順で最初に done でない成果物。invalid な delta は stale な review より先に来る（レビューでは delta を直せないため。D-021）。すべて done でも open な質問が残っていれば clarify（archive の条件を満たさないため）。
+- **next**：上の順で最初に done でも open でもない成果物。invalid な delta は stale な review より先に来る（レビューでは delta を直せないため。D-021）。ほかがすべて done でも open な質問が残っていれば clarify（archive の条件を満たさないため）。
 - **archive の条件**：
   - `validate` に error がない。
   - review が stale でない。`review.md` がない場合は `--yes` が必要。
@@ -444,14 +446,16 @@ clarify では、Claude Code の質問 UI（選択肢つき）が使えればそ
 | `CHANGE_NOT_FOUND` / `UNKNOWN_ARTIFACT` / `UNKNOWN_AGENT` | 2 | 指定した change、成果物、エージェントが存在しない |
 | `CHANGE_ID_INVALID` / `CHANGE_EXISTS` | 1 | change ID が kebab-case でない、またはすでに存在する |
 | `CHANGE_META_INVALID` | 1 | `.comb.yaml` がない、または読めない |
-| `CONFIG_INVALID` | 1 | `config.yaml` の型や値が不正（context が 16KB を超える場合を含む） |
-| `DELTA_EMPTY` | 1 | delta に変更が1つもない |
+| `CONFIG_INVALID` | 1 | `config.yaml` の型や値が不正（context が 16KB を超える場合を含む）。`status` は状態とともに返し、config を使う `instructions`・`update`・`docs` は既定値で続けずに止まる |
+| `CONFIG_KEPT` | 0（warning） | `comb init`：`config.yaml` がすでにあるため、それと違う `--language` を反映しなかった |
+| `DELTA_EMPTY` | 1 | delta に変更が1つもない（見出しを読めなかった delta には出さない） |
 | `ARCHIVE_BLOCKED` | 1 | archive の条件（5.1）を満たしていない。満たしていない条件ごとに1件出し、fix に解消の方法やフラグを書く |
 | `DECISION_ID_CONFLICT` | 1 | change ローカルの Decision ID と同じ文字列の ID が正本にある、または Supersedes の対象がすでに別の Decision に置き換えられている |
 | `ARCHIVE_TARGET_EXISTS` | 1 | archive の移動先のフォルダがすでにある |
 | `ARCHIVE_IO_FAILED` | 1 | archive 中にファイルの読み書きが失敗した。移動の前なら何も変わらない。移動の後なら、まだ置き換えていないファイルと、残っている一時ファイルを示す |
 | `ID_NOT_FOUND` | 2 | `comb show` に指定した ID の要件、Decision、change が見つからない |
-| `DOC_MISSING` / `DOC_STALE` / `DOC_USER_OWNED` | 1 | `comb docs`：ドキュメントがない／生成元が変わった（または stamp 前）／書き出し先に印のないファイルがある |
+| `DOC_MISSING` / `DOC_STALE` / `DOC_USER_OWNED` | 1 | `comb docs`：ドキュメントがない（ほかの1本以上を生成した後）／生成元が変わった（または stamp 前）／書き出し先に印のないファイルがある |
+| `DOCS_NOT_STARTED` | 0（info） | `comb docs`：まだ1本も生成していない（docs を使わないプロジェクトを失敗させない。D-025） |
 | `REF_EMPTY_CONTEXT` | 1 | `comb docs`：`config:context` を引用しているが、config の context が空 |
 | `REF_UNKNOWN_SECTION` | 1 | `comb docs`：`<capability>#<見出し>` の見出しが、その capability の正本の節（Purpose を含み、Requirements を除く）にない。fix に節の一覧を示す |
 | `DOC_UNCITED_SECTION` / `DOC_UNCOVERED` | 0（warning） | `comb docs`：引用のない節がある／どのドキュメントにも引用されない要件がある |

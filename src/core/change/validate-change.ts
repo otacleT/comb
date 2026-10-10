@@ -1,10 +1,11 @@
-import { diag, type Diagnostic } from '../diagnostics.js';
+import { diag, hasErrors, type Diagnostic } from '../diagnostics.js';
 import type { ChangeSnapshot, Project } from '../project/load.js';
 import type { Decision } from '../decision/model.js';
 import { parseDecisions, parseQuestions } from '../decision/parse.js';
 import { checkDecisionRefs, validateDecisions, validateQuestions } from '../decision/validate.js';
 import { paths, rel } from '../project/paths.js';
 import { validateCapability, validateDelta } from '../spec/validate-spec.js';
+import { countTasks } from '../workflow/status.js';
 import { baseDrift } from './base.js';
 
 const CANONICAL_DECISIONS_FILE = 'comb/decisions.md';
@@ -96,7 +97,9 @@ export function validateChange(project: Project, change: ChangeSnapshot, all: Ch
   for (const d of change.deltas) {
     const otherAdded = new Set([...addedIds(change, d.file), ...othersAdded]);
     const base = project.specs.get(d.capability)?.capability ?? null;
-    out.push(...d.diagnostics, ...validateDelta(d.delta, base, d.file, otherAdded));
+    // A delta whose headings could not be read is not empty; saying so would send the agent the wrong way.
+    const unread = hasErrors(d.diagnostics);
+    out.push(...d.diagnostics, ...validateDelta(d.delta, base, d.file, otherAdded).filter((x) => !(unread && x.code === 'DELTA_EMPTY')));
     if (!base && d.delta.prefix) {
       const owner = prefixOwner.get(d.delta.prefix);
       if (owner !== undefined && owner !== d.capability) {
@@ -133,6 +136,10 @@ export function validateChange(project: Project, change: ChangeSnapshot, all: Ch
     for (const r of [...d.delta.added, ...d.delta.modified]) {
       out.push(...checkDecisionRefs(r.decisionRefs, knownDecisions, { file: d.file, line: r.line, id: r.id }));
     }
+  }
+  if (change.files.tasks !== undefined && countTasks(change.files.tasks).total === 0) {
+    out.push(diag('warning', 'TASKS_NO_CHECKBOX', 'tasks.md has no checkbox tasks, so their progress cannot be tracked',
+      { file: rel(project.root, paths.changeFile(project.root, change.id, 'tasks')) }, 'Write each task as "- [ ] 1.1 <task>"'));
   }
   out.push(...baseDrift(project, change));
   return out;

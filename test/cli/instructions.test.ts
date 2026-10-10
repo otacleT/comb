@@ -24,6 +24,15 @@ describe('comb instructions', () => {
   it('requires --change', async () => {
     expect((await runCli(['instructions', 'proposal'], root)).code).toBe(2);
   });
+
+  it('stops on a broken config instead of falling back to the defaults', async () => {
+    const broken = makeProject({ 'comb/config.yaml': `${CONFIG_YAML}review:\n  lenses: [security]\n`, 'comb/changes/a/.comb.yaml': metaYaml('a') });
+    const r = await runCli(['instructions', 'review', '--change', 'a', '--json'], broken);
+    expect(r.code).toBe(1);
+    const env = JSON.parse(r.stdout);
+    expect(env.data).toBeNull();
+    expect(env.diagnostics.map((d: { code: string }) => d.code)).toEqual(['CONFIG_INVALID']);
+  });
 });
 
 describe('comb instructions docs', () => {
